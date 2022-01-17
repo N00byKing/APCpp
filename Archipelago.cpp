@@ -15,6 +15,7 @@
 
 #define ADD_TO_MSGQUEUE(x,y) messageQueue.push_back(std::pair<std::string,int>(x,y))
 
+//Setup Stuff
 bool init = false;
 bool auth = false;
 int ap_player_id;
@@ -23,13 +24,22 @@ std::string ap_ip;
 std::string ap_game;
 std::string ap_passwd;
 int ap_uuid = 0;
+
+//Deathlink Stuff
+bool deathlinkstat = false;
+bool deathlinksupported = false;
+bool enable_deathlink = false;
+int deathlink_amnesty = 0;
+int cur_deathlink_amnesty = 0;
 std::deque<std::pair<std::string,int>> messageQueue;
 std::map<int, std::string> map_player_id_name;
 std::map<int, std::string> map_location_id_name;
 std::map<int, std::string> map_item_id_name;
 
+//Callback function pointers
 void (*resetItemValues)();
 void (*getitemfunc)(int);
+void (*recvdeath)();
 
 ix::WebSocket webSocket;
 Json::Reader reader;
@@ -110,6 +120,25 @@ void AP_StoryComplete() {
     }
 }
 
+void AP_DeathLinkSend() {
+    if (!enable_deathlink) return;
+    if (cur_deathlink_amnesty > 0) {
+        cur_deathlink_amnesty--;
+        return;
+    }
+    if (auth) {
+        std::chrono::time_point<std::chrono::system_clock> timestamp = std::chrono::system_clock::now();
+        Json::Value req_t;
+        req_t[0]["cmd"] = "Bounce";
+        req_t[0]["data"]["time"] = std::chrono::duration_cast<std::chrono::seconds>(timestamp.time_since_epoch()).count();
+        req_t[0]["data"]["source"] = ap_player_name; // Name and Shame >:D
+        req_t[0]["tags"][0] = "DeathLink";
+        APSend(writer.write(req_t));
+    } else {
+        printf("AP: Not Connected. Send will fail.\n");
+    }
+}
+
 std::deque<std::pair<std::string,int>> AP_GetMsgQueue() {
     return messageQueue;
 }
@@ -120,6 +149,22 @@ void AP_SetItemClearCallback(void (*f_itemclr)()) {
 
 void AP_SetItemRecvCallback(void (*f_itemrecv)(int)) {
     getitemfunc = f_itemrecv;
+}
+
+void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)()) {
+    recvdeath = f_deathrecv;
+}
+
+void AP_SetDeathLinkSupported(bool supdeathlink) {
+    deathlinksupported = supdeathlink;
+}
+
+bool AP_DeathLinkPending() {
+    return deathlinkstat;
+}
+
+void AP_DeathLinkClear() {
+    deathlinkstat = false;
 }
 
 bool parse_response(std::string msg, std::string &request) {
@@ -136,7 +181,11 @@ bool parse_response(std::string msg, std::string &request) {
                 req_t[i]["name"] = ap_player_name;
                 req_t[i]["password"] = ap_passwd;
                 req_t[i]["uuid"] = ap_uuid;
-                req_t[i]["tags"][0] = "DeathLink"; // Send Tag even though we don't know if we want these packages, just in case
+                if (deathlinksupported) {
+                    req_t[i]["tags"][0] = "DeathLink"; // Send Tag even though we don't know if player enabled deathlink, just in case
+                } else {
+                    req_t[i]["tags"] = Json::arrayValue; // DeathLink not supported by game
+                }
                 req_t[i]["version"]["major"] = "0";
                 req_t[i]["version"]["minor"] = "2";
                 req_t[i]["version"]["build"] = "2";
@@ -159,6 +208,7 @@ bool parse_response(std::string msg, std::string &request) {
             for (unsigned int j = 0; j < root[i]["players"].size(); j++) {
                 map_player_id_name.insert(std::pair<int,std::string>(root[i]["players"][j]["slot"].asInt(),root[i]["players"][j]["alias"].asString()));
             }
+            if (root[i]["slot_data"].get("DeathLink", false) && deathlinksupported) enable_deathlink = true;
             Json::Value req_t;
             req_t[0]["cmd"] = "GetDataPackage";
             request = writer.write(req_t);
@@ -213,7 +263,19 @@ bool parse_response(std::string msg, std::string &request) {
             printf("AP: Archipelago Server has refused connection. Check Password / Name / IP and restart the Game.");
             webSocket.stop();
         } else if (!strcmp(cmd, "Bounced")) {
-            // None expected. Ignoring
+            // Only expected Packages are DeathLink Packages. RIP
+            if (!enable_deathlink) continue;
+            for (unsigned int j = 0; j < root[i]["tags"].size(); j++) {
+                if (!strcmp(root[i]["tags"][j].asCString(), "DeathLink")) {
+                    // Suspicions confirmed ;-; But maybe we died, not them?
+                    if (!strcmp(root[i]["data"]["source"].asCString(), ap_player_name.c_str())) break; // We already paid our penance
+                    deathlinkstat = true;
+                    std::string out = root[i]["data"]["source"].asString() + " killed you ;-;";
+                    ADD_TO_MSGQUEUE(out, 0);
+                    printf(("AP: " + out).c_str());
+                    break;
+                }
+            }
         }
         
         else {
