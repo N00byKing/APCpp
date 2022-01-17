@@ -127,6 +127,7 @@ void AP_DeathLinkSend() {
         cur_deathlink_amnesty--;
         return;
     }
+    cur_deathlink_amnesty = deathlink_amnesty;
     if (auth) {
         std::chrono::time_point<std::chrono::system_clock> timestamp = std::chrono::system_clock::now();
         Json::Value req_t;
@@ -205,7 +206,9 @@ bool parse_response(std::string msg, std::string &request) {
             for (unsigned int j = 0; j < root[i]["players"].size(); j++) {
                 map_player_id_name.insert(std::pair<int,std::string>(root[i]["players"][j]["slot"].asInt(),root[i]["players"][j]["alias"].asString()));
             }
-            if (root[i]["slot_data"].get("DeathLink", false) && deathlinksupported) enable_deathlink = true;
+            if (root[i]["slot_data"].get("DeathLink", false).asBool() && deathlinksupported) enable_deathlink = true;
+            deathlink_amnesty = root[i]["slot_data"].get("DeathLink_Amnesty", 0).asInt();
+            cur_deathlink_amnesty = deathlink_amnesty;
             Json::Value req_t;
             req_t[0]["cmd"] = "GetDataPackage";
             request = writer.write(req_t);
@@ -270,6 +273,7 @@ bool parse_response(std::string msg, std::string &request) {
                     std::string out = root[i]["data"]["source"].asString() + " killed you";
                     ADD_TO_MSGQUEUE(out, 0);
                     printf(("AP: " + out).c_str());
+                    (*recvdeath)();
                     break;
                 }
             }
