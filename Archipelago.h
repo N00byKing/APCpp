@@ -11,8 +11,8 @@ void AP_SetDeathLinkSupported(bool);
 
 void AP_SetItemClearCallback(void (*f_itemclr)());
 void AP_SetItemRecvCallback(void (*f_itemrecv)(int));
+void AP_SetLocationCheckedCallback(void (*f_locrecv)(int));
 void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)());
-
 void AP_Start();
 
 // Sends LocationCheck for given index

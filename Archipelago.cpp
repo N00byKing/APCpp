@@ -40,6 +40,7 @@ std::map<int, std::string> map_item_id_name;
 //Callback function pointers
 void (*resetItemValues)();
 void (*getitemfunc)(int);
+void (*checklocfunc)(int);
 void (*recvdeath)();
 
 ix::WebSocket webSocket;
@@ -149,6 +150,10 @@ void AP_SetItemRecvCallback(void (*f_itemrecv)(int)) {
     getitemfunc = f_itemrecv;
 }
 
+void AP_SetLocationCheckedCallback(void (*f_locrecv)(int)) {
+    checklocfunc = f_locrecv;
+}
+
 void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)()) {
     recvdeath = f_deathrecv;
 }
@@ -200,7 +205,7 @@ bool parse_response(std::string msg, std::string &request) {
             for (unsigned int j = 0; j < root[i]["checked_locations"].size(); j++) {
                 //Sync checks with server
                 int loc_id = root[i]["checked_locations"][j].asInt();
-                #warning todo
+                (*checklocfunc)(loc_id);
             }
             for (unsigned int j = 0; j < root[i]["players"].size(); j++) {
                 map_player_id_name.insert(std::pair<int,std::string>(root[i]["players"][j]["slot"].asInt(),root[i]["players"][j]["alias"].asString()));
@@ -255,7 +260,7 @@ bool parse_response(std::string msg, std::string &request) {
             for (unsigned int j = 0; j < root[i]["checked_locations"].size(); j++) {
                 //Sync checks with server
                 int loc_id = root[i]["checked_locations"][j].asInt();
-                #warning TODO Sync Checks
+                (*checklocfunc)(loc_id);
             }
         } else if (!strcmp(cmd, "ConnectionRefused")) {
             auth = false;
