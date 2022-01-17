@@ -12,6 +12,7 @@
 #include <string>
 #include <chrono>
 #include <cstdlib>
+#include <vector>
 
 #define ADD_TO_MSGQUEUE(x,y) messageQueue.push_back(std::pair<std::string,int>(x,y))
 
@@ -137,10 +138,6 @@ void AP_DeathLinkSend() {
     } else {
         printf("AP: Not Connected. Send will fail.\n");
     }
-}
-
-std::deque<std::pair<std::string,int>> AP_GetMsgQueue() {
-    return messageQueue;
 }
 
 void AP_SetItemClearCallback(void (*f_itemclr)()) {
@@ -270,7 +267,7 @@ bool parse_response(std::string msg, std::string &request) {
                     // Suspicions confirmed ;-; But maybe we died, not them?
                     if (!strcmp(root[i]["data"]["source"].asCString(), ap_player_name.c_str())) break; // We already paid our penance
                     deathlinkstat = true;
-                    std::string out = root[i]["data"]["source"].asString() + " killed you ;-;";
+                    std::string out = root[i]["data"]["source"].asString() + " killed you";
                     ADD_TO_MSGQUEUE(out, 0);
                     printf(("AP: " + out).c_str());
                     break;
@@ -283,6 +280,27 @@ bool parse_response(std::string msg, std::string &request) {
         }
     }
     return false;
+}
+
+bool AP_IsMessagePending() {
+    return !messageQueue.empty();
+}
+
+std::vector<std::string> AP_GetLatestMessage() {
+    int amount = messageQueue.front().second;
+    std::vector<std::string> msg;
+    for (int i = 0; i <= amount; i++) {
+        msg.push_back(messageQueue.at(i).first);
+    }
+    return msg;
+}
+
+void AP_ClearLatestMessage() {
+    int amount = messageQueue.front().second;
+    for (int i = 0; i <= amount; i++) {
+        messageQueue.pop_front();
+    }
+    messageQueue.shrink_to_fit();
 }
 
 void APSend(std::string req) {
