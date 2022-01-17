@@ -189,7 +189,6 @@ bool parse_response(std::string msg, std::string &request) {
                 req_t[i]["version"]["build"] = "2";
                 req_t[i]["version"]["class"] = "Version";
                 request = writer.write(req_t);
-                auth = false;
                 return true;
             }
         } else if (!strcmp(cmd,"Connected")) {
