@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.4)
 set(CMAKE_CXX_STANDARD 11)
 
 project(APCpp)
+
+set(WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(IXWebSocket)
