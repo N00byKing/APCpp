@@ -7,13 +7,16 @@
 void AP_Init(const char*, const char*, const char*, const char*);
 bool AP_IsInit();
 
+void AP_Start();
+
 void AP_SetDeathLinkSupported(bool);
 
 void AP_SetItemClearCallback(void (*f_itemclr)());
 void AP_SetItemRecvCallback(void (*f_itemrecv)(int));
 void AP_SetLocationCheckedCallback(void (*f_locrecv)(int));
 void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)());
-void AP_Start();
+
+void AP_RegisterSlotDataIntCallback(std::string, void (*f_slotdata)(int));
 
 // Sends LocationCheck for given index
 void AP_SendItem(int);

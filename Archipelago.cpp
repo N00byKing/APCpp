@@ -43,6 +43,9 @@ void (*getitemfunc)(int);
 void (*checklocfunc)(int);
 void (*recvdeath)();
 
+std::map<std::string, void (*)(int)> map_slotdata_callback_int;
+std::vector<std::string> slotdata_strings;
+
 ix::WebSocket webSocket;
 Json::Reader reader;
 Json::FastWriter writer;
@@ -158,6 +161,11 @@ void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)()) {
     recvdeath = f_deathrecv;
 }
 
+void AP_RegisterSlotDataIntCallback(std::string key, void (*f_slotdata)(int)) {
+    map_slotdata_callback_int[key] = f_slotdata;
+    slotdata_strings.push_back(key);
+}
+
 void AP_SetDeathLinkSupported(bool supdeathlink) {
     deathlinksupported = supdeathlink;
 }
@@ -213,6 +221,9 @@ bool parse_response(std::string msg, std::string &request) {
             if (root[i]["slot_data"].get("DeathLink", false).asBool() && deathlinksupported) enable_deathlink = true;
             deathlink_amnesty = root[i]["slot_data"].get("DeathLink_Amnesty", 0).asInt();
             cur_deathlink_amnesty = deathlink_amnesty;
+            for (std::string key : slotdata_strings) {
+                (*map_slotdata_callback_int.at(key))(root[i]["slot_data"][key].asInt());
+            }
             Json::Value req_t;
             req_t[0]["cmd"] = "GetDataPackage";
             request = writer.write(req_t);
