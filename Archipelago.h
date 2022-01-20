@@ -9,6 +9,8 @@ bool AP_IsInit();
 
 void AP_Start();
 
+void AP_EnableQueueItemRecvMsgs(bool);
+
 void AP_SetDeathLinkSupported(bool);
 
 void AP_SetItemClearCallback(void (*f_itemclr)());

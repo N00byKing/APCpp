@@ -43,6 +43,8 @@ void (*getitemfunc)(int);
 void (*checklocfunc)(int);
 void (*recvdeath)();
 
+bool queueitemrecvmsg = true;
+
 std::map<std::string, void (*)(int)> map_slotdata_callback_int;
 std::vector<std::string> slotdata_strings;
 
@@ -143,6 +145,10 @@ void AP_DeathLinkSend() {
     } else {
         printf("AP: Not Connected. Send will fail.\n");
     }
+}
+
+void AP_EnableQueueItemRecvMsgs(bool b) {
+    queueitemrecvmsg = b;
 }
 
 void AP_SetItemClearCallback(void (*f_itemclr)()) {
@@ -264,8 +270,10 @@ bool parse_response(std::string msg, std::string &request) {
             for (unsigned int j = 0; j < root[i]["items"].size(); j++) {
                 int item_id = root[i]["items"][j]["item"].asInt();
                 (*getitemfunc)(item_id);
-                ADD_TO_MSGQUEUE(map_item_id_name.at(item_id) + " received", 1);
-                ADD_TO_MSGQUEUE(("From " + map_player_id_name.at(root[i]["items"][j]["player"].asInt())), 0);
+                if (queueitemrecvmsg) {
+                    ADD_TO_MSGQUEUE(map_item_id_name.at(item_id) + " received", 1);
+                    ADD_TO_MSGQUEUE(("From " + map_player_id_name.at(root[i]["items"][j]["player"].asInt())), 0);
+                }
             }
         } else if (!strcmp(cmd, "RoomUpdate")) {
             for (unsigned int j = 0; j < root[i]["checked_locations"].size(); j++) {
