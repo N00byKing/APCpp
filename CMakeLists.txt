@@ -4,10 +4,6 @@ project(APCpp)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (MINGW OR WIN32)
-    set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ -lwsock32 -lws2_32 ${CMAKE_CXX_STANDARD_LIBRARIES}")
-endif (MINGW OR WIN32)
-
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 add_library(APCpp SHARED Archipelago.cpp Archipelago.h)
@@ -34,5 +30,5 @@ if (WIN32)
     target_link_libraries(APCpp ws2_32)
 endif(WIN32)
 if (MINGW)
-    target_link_libraries(APCpp -static-libstdc++)
+    target_link_libraries(APCpp -static-libstdc++ -static-libgcc)
 endif(MINGW)
