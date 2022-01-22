@@ -249,6 +249,7 @@ bool parse_response(std::string msg, std::string &request) {
             req_t[0]["cmd"] = "Sync";
             request = writer.write(req_t);
             auth = true;
+            ADD_TO_MSGQUEUE("Connected to Archipelago", 0);
             return true;
         } else if (!strcmp(cmd,"Print")) {
             printf("AP: %s\n", root[i]["text"].asCString());
