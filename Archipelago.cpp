@@ -93,6 +93,8 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
             }
         }
     );
+
+    map_player_id_name.insert(std::pair<int,std::string>(0,"Archipelago"));
 }
 
 void AP_Start() {
