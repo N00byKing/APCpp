@@ -193,20 +193,21 @@ bool parse_response(std::string msg, std::string &request) {
             if (!auth) {
                 Json::Value req_t;
                 ap_uuid = std::rand();
-                req_t[i]["cmd"] = "Connect";
-                req_t[i]["game"] = ap_game;
-                req_t[i]["name"] = ap_player_name;
-                req_t[i]["password"] = ap_passwd;
-                req_t[i]["uuid"] = ap_uuid;
+                req_t[0]["cmd"] = "Connect";
+                req_t[0]["game"] = ap_game;
+                req_t[0]["name"] = ap_player_name;
+                req_t[0]["password"] = ap_passwd;
+                req_t[0]["uuid"] = ap_uuid;
                 if (deathlinksupported) {
-                    req_t[i]["tags"][0] = "DeathLink"; // Send Tag even though we don't know if player enabled deathlink, just in case
+                    req_t[0]["tags"][0] = "DeathLink"; // Send Tag even though we don't know if player enabled deathlink, just in case
                 } else {
-                    req_t[i]["tags"] = Json::arrayValue; // DeathLink not supported by game
+                    req_t[0]["tags"] = Json::arrayValue; // DeathLink not supported by game
                 }
-                req_t[i]["version"]["major"] = "0";
-                req_t[i]["version"]["minor"] = "2";
-                req_t[i]["version"]["build"] = "2";
-                req_t[i]["version"]["class"] = "Version";
+                req_t[0]["version"]["major"] = "0";
+                req_t[0]["version"]["minor"] = "2";
+                req_t[0]["version"]["build"] = "2";
+                req_t[0]["version"]["class"] = "Version";
+                req_t[0]["items_handling"] = 7; // Full Remote
                 request = writer.write(req_t);
                 return true;
             }
