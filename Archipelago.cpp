@@ -257,7 +257,6 @@ bool parse_response(std::string msg, std::string &request) {
         } else if (!strcmp(cmd,"PrintJSON")) {
             if (!strcmp(root[i].get("type","").asCString(),"ItemSend")) {
                 if (map_player_id_name.at(root[i]["receiving"].asInt()) == ap_player_name || map_player_id_name.at(root[i]["item"]["player"].asInt()) != ap_player_name) continue;
-                printf(map_player_id_name.at(root[i]["item"]["player"].asInt()).c_str());
                 ADD_TO_MSGQUEUE((map_item_id_name.at(root[i]["item"]["item"].asInt()) + " was sent"), 1);
                 ADD_TO_MSGQUEUE(("to " + map_player_id_name.at(root[i]["receiving"].asInt())), 0);
                 printf("AP: Item from %s to %s\n", map_player_id_name.at(root[i]["item"]["player"].asInt()).c_str(), map_player_id_name.at(root[i]["receiving"].asInt()).c_str());
