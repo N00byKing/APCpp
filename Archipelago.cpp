@@ -63,6 +63,12 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
 
     std::srand(std::time(nullptr)); // use current time as seed for random generator
 
+    if (!strcmp(ip,"")) {
+        ip = "archipelago.gg:38281";
+        printf("AP: Using default Server Adress: '%s'", ip);
+    } else {
+        printf("AP: Using Server Adress: '%s'", ip);
+    }
     ap_ip = std::string(ip);
     ap_game = std::string(game);
     ap_player_name = std::string(player_name);
