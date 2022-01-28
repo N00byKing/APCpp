@@ -65,9 +65,9 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
 
     if (!strcmp(ip,"")) {
         ip = "archipelago.gg:38281";
-        printf("AP: Using default Server Adress: '%s'", ip);
+        printf("AP: Using default Server Adress: '%s'\n", ip);
     } else {
-        printf("AP: Using Server Adress: '%s'", ip);
+        printf("AP: Using Server Adress: '%s'\n", ip);
     }
     ap_ip = std::string(ip);
     ap_game = std::string(game);
