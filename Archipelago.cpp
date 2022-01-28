@@ -46,6 +46,7 @@ void (*recvdeath)();
 bool queueitemrecvmsg = true;
 
 std::map<std::string, void (*)(int)> map_slotdata_callback_int;
+std::map<std::string, void (*)(std::map<int,int>)> map_slotdata_callback_mapintint;
 std::vector<std::string> slotdata_strings;
 
 ix::WebSocket webSocket;
@@ -174,6 +175,11 @@ void AP_RegisterSlotDataIntCallback(std::string key, void (*f_slotdata)(int)) {
     slotdata_strings.push_back(key);
 }
 
+void AP_RegisterSlotDataMapIntIntCallback(std::string key, void (*f_slotdata)(std::map<int,int>)) {
+    map_slotdata_callback_mapintint[key] = f_slotdata;
+    slotdata_strings.push_back(key);
+}
+
 void AP_SetDeathLinkSupported(bool supdeathlink) {
     deathlinksupported = supdeathlink;
 }
@@ -231,7 +237,16 @@ bool parse_response(std::string msg, std::string &request) {
             deathlink_amnesty = root[i]["slot_data"].get("DeathLink_Amnesty", 0).asInt();
             cur_deathlink_amnesty = deathlink_amnesty;
             for (std::string key : slotdata_strings) {
-                (*map_slotdata_callback_int.at(key))(root[i]["slot_data"][key].asInt());
+                if (map_slotdata_callback_int.count(key)) {
+                    (*map_slotdata_callback_int.at(key))(root[i]["slot_data"][key].asInt());
+                } else {
+                    std::map<int,int> out;
+                    for (auto itr : root[i]["slot_data"][key].getMemberNames()) {
+                        out.insert(std::pair<int,int>(std::stoi(itr),root[i]["slot_data"][key][itr.c_str()].asInt()));
+                    }
+                    (*map_slotdata_callback_mapintint.at(key))(out);
+                }
+                
             }
             Json::Value req_t;
             req_t[0]["cmd"] = "GetDataPackage";
