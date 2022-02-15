@@ -114,10 +114,6 @@ bool AP_IsInit() {
 }
 
 void AP_SendItem(int idx) {
-    if (!auth) {
-        printf("AP: Not Connected. Send will fail.\n");
-        return;
-    }
     printf(("AP: Checked " + map_location_id_name.at(idx) + ". Informing Archipelago...\n").c_str());
     Json::Value req_t;
     req_t[0]["cmd"] = "LocationChecks";
@@ -126,14 +122,10 @@ void AP_SendItem(int idx) {
 }
 
 void AP_StoryComplete() {
-    if (auth) {
-        Json::Value req_t;
-        req_t[0]["cmd"] = "StatusUpdate";
-        req_t[0]["status"] = 30; //CLIENT_GOAL
-        APSend(writer.write(req_t));
-    } else {
-        printf("AP: Not Connected. Send will fail.\n");
-    }
+    Json::Value req_t;
+    req_t[0]["cmd"] = "StatusUpdate";
+    req_t[0]["status"] = 30; //CLIENT_GOAL
+    APSend(writer.write(req_t));
 }
 
 void AP_DeathLinkSend() {
@@ -143,17 +135,13 @@ void AP_DeathLinkSend() {
         return;
     }
     cur_deathlink_amnesty = deathlink_amnesty;
-    if (auth) {
-        std::chrono::time_point<std::chrono::system_clock> timestamp = std::chrono::system_clock::now();
-        Json::Value req_t;
-        req_t[0]["cmd"] = "Bounce";
-        req_t[0]["data"]["time"] = std::chrono::duration_cast<std::chrono::seconds>(timestamp.time_since_epoch()).count();
-        req_t[0]["data"]["source"] = ap_player_name; // Name and Shame >:D
-        req_t[0]["tags"][0] = "DeathLink";
-        APSend(writer.write(req_t));
-    } else {
-        printf("AP: Not Connected. Send will fail.\n");
-    }
+    std::chrono::time_point<std::chrono::system_clock> timestamp = std::chrono::system_clock::now();
+    Json::Value req_t;
+    req_t[0]["cmd"] = "Bounce";
+    req_t[0]["data"]["time"] = std::chrono::duration_cast<std::chrono::seconds>(timestamp.time_since_epoch()).count();
+    req_t[0]["data"]["source"] = ap_player_name; // Name and Shame >:D
+    req_t[0]["tags"][0] = "DeathLink";
+    APSend(writer.write(req_t));
 }
 
 void AP_EnableQueueItemRecvMsgs(bool b) {
@@ -356,5 +344,9 @@ void AP_ClearLatestMessage() {
 }
 
 void APSend(std::string req) {
+    if (!auth) {
+        printf("AP: Not Connected. Send will fail.\n");
+        return;
+    }
     webSocket.send(req);
 }
