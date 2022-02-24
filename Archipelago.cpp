@@ -348,7 +348,7 @@ void AP_ClearLatestMessage() {
 }
 
 void APSend(std::string req) {
-    if (!auth) {
+    if (webSocket.getReadyState() != ix::ReadyState::Open) {
         printf("AP: Not Connected. Send will fail.\n");
         return;
     }
