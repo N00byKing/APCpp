@@ -114,7 +114,11 @@ bool AP_IsInit() {
 }
 
 void AP_SendItem(int idx) {
-    printf(("AP: Checked " + map_location_id_name.at(idx) + ". Informing Archipelago...\n").c_str());
+    if (map_location_id_name.count(idx)) {
+        printf(("AP: Checked " + map_location_id_name.at(idx) + ". Informing Archipelago...\n").c_str());
+    } else {
+        printf("AP: Checked unknown location %d. Informing Archipelago...\n", idx);
+    }
     Json::Value req_t;
     req_t[0]["cmd"] = "LocationChecks";
     req_t[0]["locations"][0] = idx;
