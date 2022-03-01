@@ -39,11 +39,13 @@ std::map<int, std::string> map_item_id_name;
 
 //Callback function pointers
 void (*resetItemValues)();
-void (*getitemfunc)(int);
+void (*getitemfunc)(int,bool);
 void (*checklocfunc)(int);
 void (*recvdeath)();
 
 bool queueitemrecvmsg = true;
+
+int last_item_idx = 0;
 
 std::map<std::string, void (*)(int)> map_slotdata_callback_int;
 std::map<std::string, void (*)(std::map<int,int>)> map_slotdata_callback_mapintint;
@@ -156,7 +158,7 @@ void AP_SetItemClearCallback(void (*f_itemclr)()) {
     resetItemValues = f_itemclr;
 }
 
-void AP_SetItemRecvCallback(void (*f_itemrecv)(int)) {
+void AP_SetItemRecvCallback(void (*f_itemrecv)(int,bool)) {
     getitemfunc = f_itemrecv;
 }
 
@@ -211,7 +213,7 @@ bool parse_response(std::string msg, std::string &request) {
                 }
                 req_t[0]["version"]["major"] = "0";
                 req_t[0]["version"]["minor"] = "2";
-                req_t[0]["version"]["build"] = "2";
+                req_t[0]["version"]["build"] = "6";
                 req_t[0]["version"]["class"] = "Version";
                 req_t[0]["items_handling"] = 7; // Full Remote
                 request = writer.write(req_t);
@@ -262,6 +264,13 @@ bool parse_response(std::string msg, std::string &request) {
                 }
             }
             Json::Value req_t;
+            req_t[0]["cmd"] = "Get";
+            req_t[0]["data"][0] = "APCppLastRecv" + ap_player_name + std::to_string(ap_player_id);
+            request = writer.write(req_t);
+            return true;
+        } else if (!strcmp(cmd,"Retrieved")) {
+            last_item_idx = root[i]["data"].get("APCppLastRecv" + ap_player_name + std::to_string(ap_player_id), last_item_idx).asInt();
+            Json::Value req_t;
             req_t[0]["cmd"] = "Sync";
             request = writer.write(req_t);
             auth = true;
@@ -283,14 +292,24 @@ bool parse_response(std::string msg, std::string &request) {
         } else if (!strcmp(cmd, "LocationInfo")) {
             //Uninteresting for now.
         } else if (!strcmp(cmd, "ReceivedItems")) {
+            int item_idx = root[i]["index"].asInt();
+            bool notify;
             for (unsigned int j = 0; j < root[i]["items"].size(); j++) {
                 int item_id = root[i]["items"][j]["item"].asInt();
-                (*getitemfunc)(item_id);
-                if (queueitemrecvmsg) {
+                notify = (item_idx == 0 && last_item_idx <= j) || item_idx != 0;
+                (*getitemfunc)(item_id, notify);
+                if (queueitemrecvmsg && notify) {
                     ADD_TO_MSGQUEUE(map_item_id_name.at(item_id) + " received", 1);
                     ADD_TO_MSGQUEUE(("From " + map_player_id_name.at(root[i]["items"][j]["player"].asInt())), 0);
                 }
             }
+            last_item_idx = item_idx == 0 ? root[i]["items"].size() : last_item_idx + root[i]["items"].size();
+            Json::Value req_t;
+            req_t[0]["cmd"] = "Set";
+            req_t[0]["key"] = "APCppLastRecv" + ap_player_name + std::to_string(ap_player_id);
+            req_t[0]["value"] = last_item_idx;
+            request = writer.write(req_t);
+            return true;
         } else if (!strcmp(cmd, "RoomUpdate")) {
             for (unsigned int j = 0; j < root[i]["checked_locations"].size(); j++) {
                 //Sync checks with server

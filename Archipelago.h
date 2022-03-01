@@ -13,9 +13,13 @@ void AP_EnableQueueItemRecvMsgs(bool);
 
 void AP_SetDeathLinkSupported(bool);
 
+//Parameter Function must reset local state
 void AP_SetItemClearCallback(void (*f_itemclr)());
-void AP_SetItemRecvCallback(void (*f_itemrecv)(int));
+//Parameter Function must collect item id given with parameter. Secound parameter indicates whether or not to notify player
+void AP_SetItemRecvCallback(void (*f_itemrecv)(int,bool));
+//Parameter Function must mark given location id as checked
 void AP_SetLocationCheckedCallback(void (*f_locrecv)(int));
+//Parameter Function will be called when Death Link is received. Alternative to Pending/Clear usage
 void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)());
 
 void AP_RegisterSlotDataIntCallback(std::string, void (*f_slotdata)(int));
