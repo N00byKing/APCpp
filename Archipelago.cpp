@@ -265,11 +265,11 @@ bool parse_response(std::string msg, std::string &request) {
             }
             Json::Value req_t;
             req_t[0]["cmd"] = "Get";
-            req_t[0]["data"][0] = "APCppLastRecv" + ap_player_name + std::to_string(ap_player_id);
+            req_t[0]["keys"][0] = "APCppLastRecv" + ap_player_name + std::to_string(ap_player_id);
             request = writer.write(req_t);
             return true;
         } else if (!strcmp(cmd,"Retrieved")) {
-            last_item_idx = root[i]["data"].get("APCppLastRecv" + ap_player_name + std::to_string(ap_player_id), last_item_idx).asInt();
+            last_item_idx = root[i]["keys"].get("APCppLastRecv" + ap_player_name + std::to_string(ap_player_id), last_item_idx).asInt();
             Json::Value req_t;
             req_t[0]["cmd"] = "Sync";
             request = writer.write(req_t);
@@ -307,7 +307,8 @@ bool parse_response(std::string msg, std::string &request) {
             Json::Value req_t;
             req_t[0]["cmd"] = "Set";
             req_t[0]["key"] = "APCppLastRecv" + ap_player_name + std::to_string(ap_player_id);
-            req_t[0]["value"] = last_item_idx;
+            req_t[0]["operations"][0]["operation"] = "replace";
+            req_t[0]["operations"][0]["value"] = last_item_idx;
             request = writer.write(req_t);
             return true;
         } else if (!strcmp(cmd, "RoomUpdate")) {
