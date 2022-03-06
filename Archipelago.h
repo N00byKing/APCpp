@@ -5,6 +5,7 @@
 #include <map>
 
 void AP_Init(const char*, const char*, const char*, const char*);
+void AP_Init(const char*);
 bool AP_IsInit();
 
 void AP_Start();

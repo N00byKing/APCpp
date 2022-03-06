@@ -4,6 +4,7 @@
 #include "ixwebsocket/IXWebSocket.h"
 #include "ixwebsocket/IXUserAgent.h"
 
+#include <fstream>
 #include <json/json.h>
 #include <json/reader.h>
 #include <json/value.h>
@@ -19,6 +20,7 @@
 //Setup Stuff
 bool init = false;
 bool auth = false;
+bool multiworld = true;
 int ap_player_id;
 std::string ap_player_name;
 std::string ap_ip;
@@ -47,6 +49,10 @@ bool queueitemrecvmsg = true;
 
 int last_item_idx = 0;
 
+std::ofstream sp_save_file;
+Json::Value sp_save_root;
+
+//Slot Data Stuff
 std::map<std::string, void (*)(int)> map_slotdata_callback_int;
 std::map<std::string, void (*)(std::map<int,int>)> map_slotdata_callback_mapintint;
 std::vector<std::string> slotdata_strings;
@@ -55,14 +61,14 @@ ix::WebSocket webSocket;
 Json::Reader reader;
 Json::FastWriter writer;
 
+Json::Value sp_ap_root;
+
 bool parse_response(std::string msg, std::string &request);
 void APSend(std::string req);
+void WriteSPSave();
 
 void AP_Init(const char* ip, const char* game, const char* player_name, const char* passwd) {
-    if (init) {
-        return;
-    }
-
+    multiworld = true;
     std::srand(std::time(nullptr)); // use current time as seed for random generator
 
     if (!strcmp(ip,"")) {
@@ -106,9 +112,53 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
     map_player_id_name.insert(std::pair<int,std::string>(0,"Archipelago"));
 }
 
+void AP_Init(const char* filename) {
+    multiworld = false;
+    std::ifstream mwfile(filename);
+    reader.parse(mwfile,sp_ap_root);
+    mwfile.close();
+    std::ifstream savefile(std::string(filename) + ".save");
+    reader.parse(savefile, sp_save_root);
+    savefile.close();
+    sp_save_file.open((std::string(filename) + ".save").c_str());
+    WriteSPSave();
+}
+
 void AP_Start() {
     init = true;
-    webSocket.start();
+    if (multiworld) {
+        webSocket.start();
+    } else {
+        if (!sp_save_root.get("init", false).asBool()) {
+            sp_save_root["init"] = true;
+            sp_save_root["checked_locations"] = Json::arrayValue;
+            sp_save_root["store"] = Json::objectValue;
+        }
+        Json::Value fake_msg;
+        fake_msg[0]["cmd"] = "Connected";
+        fake_msg[0]["slot"] = 1404;
+        fake_msg[0]["players"] = Json::arrayValue;
+        fake_msg[0]["checked_locations"] = sp_save_root["checked_locations"];
+        fake_msg[0]["slot_data"] = sp_ap_root["slot_data"];
+        std::string req;
+        parse_response(writer.write(fake_msg), req);
+        fake_msg.clear();
+        fake_msg[0]["cmd"] = "DataPackage";
+        fake_msg[0]["data"] = sp_ap_root["data_package"]["data"];
+        parse_response(writer.write(fake_msg), req);
+        fake_msg.clear();
+        fake_msg[0]["cmd"] = "ReceivedItems";
+        fake_msg[0]["index"] = 0;
+        fake_msg[0]["items"] = Json::arrayValue;
+        for (int i = 0; i < sp_save_root["checked_locations"].size(); i++) {
+            Json::Value item;
+            item["item"] = sp_ap_root["location_to_item"][sp_save_root["checked_locations"][i].asString()].asInt();
+            item["location"] = 0;
+            item["player"] = ap_player_id;
+            fake_msg[0]["items"].append(item);
+        }
+        parse_response(writer.write(fake_msg), req);
+    }
 }
 
 bool AP_IsInit() {
@@ -121,10 +171,32 @@ void AP_SendItem(int idx) {
     } else {
         printf("AP: Checked unknown location %d. Informing Archipelago...\n", idx);
     }
-    Json::Value req_t;
-    req_t[0]["cmd"] = "LocationChecks";
-    req_t[0]["locations"][0] = idx;
-    APSend(writer.write(req_t));
+    if (multiworld) {
+        Json::Value req_t;
+        req_t[0]["cmd"] = "LocationChecks";
+        req_t[0]["locations"][0] = idx;
+        APSend(writer.write(req_t));
+    } else {
+        for (auto itr : sp_save_root["checked_locations"]) {
+            if (itr.asInt() == idx) {
+                return;
+            }
+        }
+        Json::Value fake_msg;
+        fake_msg[0]["cmd"] = "ReceivedItems";
+        fake_msg[0]["index"] = last_item_idx;
+        fake_msg[0]["items"][0]["item"] = sp_ap_root["location_to_item"][std::to_string(idx)].asInt();
+        fake_msg[0]["items"][0]["location"] = idx;
+        fake_msg[0]["items"][0]["player"] = ap_player_id;
+        std::string req;
+        parse_response(writer.write(fake_msg), req);
+        sp_save_root["checked_locations"].append(idx);
+        WriteSPSave();
+        fake_msg.clear();
+        fake_msg[0]["cmd"] = "RoomUpdate";
+        fake_msg[0]["checked_locations"][0] = idx;
+        parse_response(writer.write(fake_msg), req);
+    }
 }
 
 void AP_StoryComplete() {
@@ -296,11 +368,16 @@ bool parse_response(std::string msg, std::string &request) {
             bool notify;
             for (unsigned int j = 0; j < root[i]["items"].size(); j++) {
                 int item_id = root[i]["items"][j]["item"].asInt();
-                notify = (item_idx == 0 && last_item_idx <= j) || item_idx != 0;
+                notify = (item_idx == 0 && last_item_idx <= j && multiworld) || item_idx != 0;
                 (*getitemfunc)(item_id, notify);
                 if (queueitemrecvmsg && notify) {
-                    ADD_TO_MSGQUEUE(map_item_id_name.at(item_id) + " received", 1);
-                    ADD_TO_MSGQUEUE(("From " + map_player_id_name.at(root[i]["items"][j]["player"].asInt())), 0);
+                    if (root[i]["items"][j]["player"] == ap_player_id) {
+                        ADD_TO_MSGQUEUE(map_item_id_name.at(item_id) + " received", 0);
+                    } else {
+                        ADD_TO_MSGQUEUE(map_item_id_name.at(item_id) + " received", 1);
+                        ADD_TO_MSGQUEUE(("From " + map_player_id_name.at(root[i]["items"][j]["player"].asInt())), 0);
+                    }
+                    
                 }
             }
             last_item_idx = item_idx == 0 ? root[i]["items"].size() : last_item_idx + root[i]["items"].size();
@@ -373,4 +450,10 @@ void APSend(std::string req) {
         return;
     }
     webSocket.send(req);
+}
+
+void WriteSPSave() {
+    sp_save_file.seekp(0);
+    sp_save_file << writer.write(sp_save_root).c_str();
+    sp_save_file.flush();
 }
