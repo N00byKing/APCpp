@@ -200,6 +200,7 @@ void AP_SendItem(int idx) {
 }
 
 void AP_StoryComplete() {
+    if (!multiworld) return;
     Json::Value req_t;
     req_t[0]["cmd"] = "StatusUpdate";
     req_t[0]["status"] = 30; //CLIENT_GOAL
