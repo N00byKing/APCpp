@@ -208,7 +208,7 @@ void AP_StoryComplete() {
 }
 
 void AP_DeathLinkSend() {
-    if (!enable_deathlink) return;
+    if (!enable_deathlink || !multiworld) return;
     if (cur_deathlink_amnesty > 0) {
         cur_deathlink_amnesty--;
         return;
