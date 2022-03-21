@@ -57,4 +57,4 @@ Clone the Repo recursively!
 - Create a folder `build`
 - Enter the folder
 - `cmake .. -DWIN32=1` (If on MinGW, also add `-DMINGW=1`. If `zlib` is not installed add `-DUSE_ZLIB=OFF`)
-- `make`
+- `cmake --build .`
