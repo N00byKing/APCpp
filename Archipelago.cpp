@@ -43,7 +43,7 @@ std::map<int, std::string> map_item_id_name;
 void (*resetItemValues)();
 void (*getitemfunc)(int,bool);
 void (*checklocfunc)(int);
-void (*recvdeath)();
+void (*recvdeath)() = nullptr;
 
 bool queueitemrecvmsg = true;
 
@@ -411,7 +411,9 @@ bool parse_response(std::string msg, std::string &request) {
                     std::string out = root[i]["data"]["source"].asString() + " killed you";
                     ADD_TO_MSGQUEUE(out, 0);
                     printf(("AP: " + out).c_str());
-                    (*recvdeath)();
+                    if (recvdeath != nullptr) {
+                        (*recvdeath)();
+                    }
                     break;
                 }
             }
