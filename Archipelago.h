@@ -10,6 +10,34 @@ bool AP_IsInit();
 
 void AP_Start();
 
+struct AP_NetworkVersion {
+    int major;
+    int minor;
+    int build;
+};
+
+#define AP_PERMISSION_DISABLED 0b000
+#define AP_PERMISSION_ENABLED 0b001
+#define AP_PERMISSION_GOAL 0b010
+#define AP_PERMISSION_AUTO 0b110
+
+struct AP_RoomInfo {
+    AP_NetworkVersion version;
+    std::vector<std::string> tags;
+    bool password_required;
+    std::map<std::string, int> permissions;
+    int hint_cost;
+    int location_check_points;
+    //MISSING: players
+    //MISSING: games
+    int datapackage_version;
+    std::map<std::string, int> datapackage_versions;
+    std::string seed_name;
+    float time;
+};
+
+int AP_GetRoomInfo(AP_RoomInfo*);
+
 void AP_EnableQueueItemRecvMsgs(bool);
 
 void AP_SetDeathLinkSupported(bool);

@@ -52,6 +52,9 @@ int last_item_idx = 0;
 std::ofstream sp_save_file;
 Json::Value sp_save_root;
 
+//Misc Data for Clients
+AP_RoomInfo lib_room_info;
+
 //Slot Data Stuff
 std::map<std::string, void (*)(int)> map_slotdata_callback_int;
 std::map<std::string, void (*)(std::map<int,int>)> map_slotdata_callback_mapintint;
@@ -109,7 +112,7 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
         }
     );
 
-    map_player_id_name.insert(std::pair<int,std::string>(0,"Archipelago"));
+    map_player_id_name[0] = "Archipelago";
 }
 
 void AP_Init(const char* filename) {
@@ -269,8 +272,33 @@ bool parse_response(std::string msg, std::string &request) {
     Json::Value root;
     reader.parse(msg, root);
     for (unsigned int i = 0; i < root.size(); i++) {
-        const char* cmd = root[0]["cmd"].asCString();
+        const char* cmd = root[i]["cmd"].asCString();
         if (!strcmp(cmd,"RoomInfo")) {
+            lib_room_info.version.major = root[i]["version"]["major"].asInt();
+            lib_room_info.version.minor = root[i]["version"]["minor"].asInt();
+            lib_room_info.version.build = root[i]["version"]["build"].asInt();
+            std::vector<std::string> serv_tags;
+            for (auto itr : root[i]["tags"]) {
+                serv_tags.push_back(itr.asString());
+            }
+            lib_room_info.tags = serv_tags;
+            lib_room_info.password_required = root[i]["password"].asBool();
+            std::map<std::string,int> serv_permissions;
+            for (auto itr : root[i]["permissions"].getMemberNames()) {
+                serv_permissions[itr] = root[i]["permissions"][itr].asInt();
+            }
+            lib_room_info.permissions = serv_permissions;
+            lib_room_info.hint_cost = root[i]["hint_cost"].asInt();
+            lib_room_info.location_check_points = root[i]["location_check_points"].asInt();
+            lib_room_info.datapackage_version = root[i]["datapackage_version"].asInt();
+            std::map<std::string,int> serv_datapkg_versions;
+            for (auto itr : root[i]["datapackage_versions"].getMemberNames()) {
+                serv_datapkg_versions[itr] = root[i]["datapackage_versions"][itr].asInt();
+            }
+            lib_room_info.datapackage_versions = serv_datapkg_versions;
+            lib_room_info.seed_name = root[i]["seed_name"].asString();
+            lib_room_info.time = root[i]["time"].asFloat();
+
             if (!auth) {
                 Json::Value req_t;
                 ap_uuid = std::rand();
@@ -315,7 +343,7 @@ bool parse_response(std::string msg, std::string &request) {
                 } else {
                     std::map<int,int> out;
                     for (auto itr : root[i]["slot_data"][key].getMemberNames()) {
-                        out.insert(std::pair<int,int>(std::stoi(itr),root[i]["slot_data"][key][itr.c_str()].asInt()));
+                        out[std::stoi(itr)] = root[i]["slot_data"][key][itr.c_str()].asInt();
                     }
                     (*map_slotdata_callback_mapintint.at(key))(out);
                 }
@@ -326,14 +354,12 @@ bool parse_response(std::string msg, std::string &request) {
             request = writer.write(req_t);
             return true;
         } else if (!strcmp(cmd,"DataPackage")) {
-            for (unsigned int j = 0; j < root[i]["data"]["games"].size(); j++) {
-                for (auto itr : root[i]["data"]["games"]) {
-                    for (auto itr2 : itr["item_name_to_id"].getMemberNames()) {
-                        map_item_id_name.insert(std::pair<int,std::string>(itr["item_name_to_id"][itr2.c_str()].asInt(), itr2));
-                    }
-                    for (auto itr2 : itr["location_name_to_id"].getMemberNames()) {
-                        map_location_id_name.insert(std::pair<int,std::string>(itr["location_name_to_id"][itr2.c_str()].asInt(), itr2));
-                    }
+            for (auto itr : root[i]["data"]["games"]) {
+                for (auto itr2 : itr["item_name_to_id"].getMemberNames()) {
+                    map_item_id_name[itr["item_name_to_id"][itr2].asInt()] = itr2;
+                }
+                for (auto itr2 : itr["location_name_to_id"].getMemberNames()) {
+                    map_location_id_name[itr["location_name_to_id"][itr2].asInt()] = itr2;
                 }
             }
             Json::Value req_t;
@@ -439,6 +465,12 @@ std::vector<std::string> AP_GetLatestMessage() {
     return msg;
 }
 
+int AP_GetRoomInfo(AP_RoomInfo* client_roominfo) {
+    if (!auth) return 1;
+    *client_roominfo = lib_room_info;
+    return 0;
+}
+
 void AP_ClearLatestMessage() {
     int amount = messageQueue.front().second;
     for (int i = 0; i <= amount; i++) {
@@ -446,6 +478,8 @@ void AP_ClearLatestMessage() {
     }
     messageQueue.shrink_to_fit();
 }
+
+// PRIV
 
 void APSend(std::string req) {
     if (webSocket.getReadyState() != ix::ReadyState::Open) {
