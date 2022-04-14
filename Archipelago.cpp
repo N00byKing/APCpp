@@ -185,10 +185,12 @@ void AP_SendItem(int idx) {
                 return;
             }
         }
+        int recv_item_id = sp_ap_root["location_to_item"].get(std::to_string(idx), 0).asInt();
+        if (recv_item_id == 0) return;
         Json::Value fake_msg;
         fake_msg[0]["cmd"] = "ReceivedItems";
         fake_msg[0]["index"] = last_item_idx+1;
-        fake_msg[0]["items"][0]["item"] = sp_ap_root["location_to_item"][std::to_string(idx)].asInt();
+        fake_msg[0]["items"][0]["item"] = recv_item_id;
         fake_msg[0]["items"][0]["location"] = idx;
         fake_msg[0]["items"][0]["player"] = ap_player_id;
         std::string req;
