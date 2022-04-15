@@ -427,7 +427,6 @@ bool parse_response(std::string msg, std::string &request) {
             auth = false;
             printf("AP: Archipelago Server has refused connection. Check Password / Name / IP and restart the Game.\n");
             fflush(stdout);
-            webSocket.stop();
         } else if (!strcmp(cmd, "Bounced")) {
             // Only expected Packages are DeathLink Packages. RIP
             if (!enable_deathlink) continue;
