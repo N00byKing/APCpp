@@ -43,6 +43,21 @@ struct AP_RoomInfo {
     float time;
 };
 
+enum AP_RequestStatus {
+    Pending, Done, Error
+};
+
+enum AP_DataType {
+    Raw, Int
+};
+
+struct AP_GetServerDataRequest {
+    AP_RequestStatus status;
+    std::string key;
+    void* data;
+    AP_DataType type;
+};
+
 int AP_GetRoomInfo(AP_RoomInfo*);
 
 void AP_EnableQueueItemRecvMsgs(bool);
@@ -107,3 +122,10 @@ void AP_ClearLatestMessage();
 AP_Message* AP_GetLatestMessage();
 
 AP_ConnectionStatus AP_GetConnectionStatus();
+
+// Returns this connection's UUID
+int AP_GetUUID();
+
+void AP_SetServerDataRaw(std::string key,  std::string operation, std::string value, std::string default_val);
+
+void AP_GetServerData(AP_GetServerDataRequest* request);
