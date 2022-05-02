@@ -480,6 +480,17 @@ void AP_ClearLatestMessage() {
     messageQueue.shrink_to_fit();
 }
 
+AP_ConnectionStatus AP_GetConnectionStatus() {
+    if (webSocket.getReadyState() == ix::ReadyState::Open) {
+        if (auth) {
+            return AP_ConnectionStatus::Authenticated;
+        } else {
+            return AP_ConnectionStatus::Connected;
+        }
+    }
+    return AP_ConnectionStatus::Disconnected;
+}
+
 // PRIV
 
 void APSend(std::string req) {

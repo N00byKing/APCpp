@@ -21,6 +21,10 @@ struct AP_NetworkVersion {
 #define AP_PERMISSION_GOAL 0b010
 #define AP_PERMISSION_AUTO 0b110
 
+enum AP_ConnectionStatus {
+    Disconnected, Connected, Authenticated
+};
+
 struct AP_RoomInfo {
     AP_NetworkVersion version;
     std::vector<std::string> tags;
