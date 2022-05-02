@@ -71,3 +71,5 @@ void AP_StoryComplete();
 bool AP_IsMessagePending();
 void AP_ClearLatestMessage();
 std::vector<std::string> AP_GetLatestMessage();
+
+AP_ConnectionStatus AP_GetConnectionStatus();
