@@ -560,10 +560,11 @@ void AP_SetServerDataRaw(std::string key, std::string operation, std::string val
 }
 
 void AP_GetServerData(AP_GetServerDataRequest* request) {
+    request->status = AP_RequestStatus::Pending;
+
     if (map_server_data.find(request->key) != map_server_data.end()) return;
 
     map_server_data[request->key] = request;
-    request->status = Pending;
 
     Json::Value req_t;
     req_t[0]["cmd"] = "Get";
