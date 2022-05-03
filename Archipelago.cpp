@@ -14,6 +14,7 @@
 #include <deque>
 #include <string>
 #include <chrono>
+#include <utility>
 #include <vector>
 
 //Setup Stuff
@@ -114,6 +115,10 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
             else if (msg->type == ix::WebSocketMessageType::Error || msg->type == ix::WebSocketMessageType::Close)
             {
                 auth = false;
+                for (std::pair<std::string,AP_GetServerDataRequest*> itr : map_server_data) {
+                    itr.second->status = AP_RequestStatus::Error;
+                    map_server_data.erase(itr.first);
+                }
                 printf("AP: Error connecting to Archipelago. Retries: %d\n", msg->errorInfo.retries-1);
             }
         }
