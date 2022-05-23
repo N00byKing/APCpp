@@ -104,7 +104,7 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
             {
                 printf("AP: Connected to Archipelago\n");
             }
-            else if (msg->type == ix::WebSocketMessageType::Error)
+            else if (msg->type == ix::WebSocketMessageType::Error || msg->type == ix::WebSocketMessageType::Close)
             {
                 auth = false;
                 printf("AP: Error connecting to Archipelago. Retries: %d\n", msg->errorInfo.retries-1);
