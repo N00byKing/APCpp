@@ -309,11 +309,7 @@ bool parse_response(std::string msg, std::string &request) {
                 req_t[0]["name"] = ap_player_name;
                 req_t[0]["password"] = ap_passwd;
                 req_t[0]["uuid"] = ap_uuid;
-                if (deathlinksupported) {
-                    req_t[0]["tags"][0] = "DeathLink"; // Send Tag even though we don't know if player enabled deathlink, just in case
-                } else {
-                    req_t[0]["tags"] = Json::arrayValue; // DeathLink not supported by game
-                }
+                req_t[0]["tags"] = Json::arrayValue;
                 req_t[0]["version"]["major"] = "0";
                 req_t[0]["version"]["minor"] = "2";
                 req_t[0]["version"]["build"] = "6";
@@ -353,6 +349,10 @@ bool parse_response(std::string msg, std::string &request) {
             }
             Json::Value req_t;
             req_t[0]["cmd"] = "GetDataPackage";
+            if (enable_deathlink && deathlinksupported) {
+                req_t[1]["cmd"] = "ConnectUpdate";
+                req_t[1]["tags"][0] = "DeathLink";
+            }
             request = writer.write(req_t);
             return true;
         } else if (!strcmp(cmd,"DataPackage")) {
