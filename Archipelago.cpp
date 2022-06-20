@@ -111,6 +111,7 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
             }
         }
     );
+    webSocket.setPingInterval(45);
 
     map_player_id_name[0] = "Archipelago";
 }
