@@ -16,6 +16,9 @@ struct AP_NetworkVersion {
     int build;
 };
 
+// Set current client version
+void AP_SetClientVersion(AP_NetworkVersion*);
+
 #define AP_PERMISSION_DISABLED 0b000
 #define AP_PERMISSION_ENABLED 0b001
 #define AP_PERMISSION_GOAL 0b010

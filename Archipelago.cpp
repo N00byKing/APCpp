@@ -27,6 +27,7 @@ std::string ap_ip;
 std::string ap_game;
 std::string ap_passwd;
 int ap_uuid = 0;
+AP_NetworkVersion client_version = {0,2,6}; // Default for compatibility reasons
 
 //Deathlink Stuff
 bool deathlinkstat = false;
@@ -167,6 +168,12 @@ void AP_Start() {
 
 bool AP_IsInit() {
     return init;
+}
+
+void AP_SetClientVersion(AP_NetworkVersion* version) {
+    client_version.major = version->major;
+    client_version.minor = version->minor;
+    client_version.build = version->build;
 }
 
 void AP_SendItem(int idx) {
@@ -311,9 +318,9 @@ bool parse_response(std::string msg, std::string &request) {
                 req_t[0]["password"] = ap_passwd;
                 req_t[0]["uuid"] = ap_uuid;
                 req_t[0]["tags"] = Json::arrayValue;
-                req_t[0]["version"]["major"] = "0";
-                req_t[0]["version"]["minor"] = "2";
-                req_t[0]["version"]["build"] = "6";
+                req_t[0]["version"]["major"] = client_version.major;
+                req_t[0]["version"]["minor"] = client_version.minor;
+                req_t[0]["version"]["build"] = client_version.build;
                 req_t[0]["version"]["class"] = "Version";
                 req_t[0]["items_handling"] = 7; // Full Remote
                 request = writer.write(req_t);
