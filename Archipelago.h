@@ -71,8 +71,39 @@ void AP_DeathLinkSend();
 // Called when Story completed, sends StatusUpdate
 void AP_StoryComplete();
 
+enum AP_MessageType {
+    Plaintext, ItemSend, ItemRecv, Hint, Countdown
+};
+
+struct AP_Message {
+    AP_MessageType type = AP_MessageType::Plaintext;
+    std::string text;
+};
+
+struct AP_ItemSendMessage : AP_Message {
+    std::string item;
+    std::string recvPlayer;
+};
+
+struct AP_ItemRecvMessage : AP_Message {
+    std::string item;
+    std::string sendPlayer;
+};
+
+struct AP_HintMessage : AP_Message {
+    std::string item;
+    std::string sendPlayer;
+    std::string recvPlayer;
+    std::string location;
+    bool checked;
+};
+
+struct AP_CountdownMessage : AP_Message {
+    int timer;
+};
+
 bool AP_IsMessagePending();
 void AP_ClearLatestMessage();
-std::vector<std::string> AP_GetLatestMessage();
+AP_Message* AP_GetLatestMessage();
 
 AP_ConnectionStatus AP_GetConnectionStatus();

@@ -15,8 +15,6 @@
 #include <cstdlib>
 #include <vector>
 
-#define ADD_TO_MSGQUEUE(x,y) messageQueue.push_back(std::pair<std::string,int>(x,y))
-
 //Setup Stuff
 bool init = false;
 bool auth = false;
@@ -35,7 +33,7 @@ bool deathlinksupported = false;
 bool enable_deathlink = false;
 int deathlink_amnesty = 0;
 int cur_deathlink_amnesty = 0;
-std::deque<std::pair<std::string,int>> messageQueue;
+std::deque<AP_Message*> messageQueue;
 std::map<int, std::string> map_player_id_name;
 std::map<int, std::string> map_location_id_name;
 std::map<int, std::string> map_item_id_name;
@@ -346,7 +344,7 @@ bool parse_response(std::string msg, std::string &request) {
             for (std::string key : slotdata_strings) {
                 if (map_slotdata_callback_int.count(key)) {
                     (*map_slotdata_callback_int.at(key))(root[i]["slot_data"][key].asInt());
-                } else {
+                } else if (map_slotdata_callback_mapintint.count(key)) {
                     std::map<int,int> out;
                     for (auto itr : root[i]["slot_data"][key].getMemberNames()) {
                         out[std::stoi(itr)] = root[i]["slot_data"][key][itr.c_str()].asInt();
@@ -383,20 +381,47 @@ bool parse_response(std::string msg, std::string &request) {
             req_t[0]["cmd"] = "Sync";
             request = writer.write(req_t);
             auth = true;
-            ADD_TO_MSGQUEUE("Connected to Archipelago", 0);
             return true;
-        } else if (!strcmp(cmd,"Print")) {
-            printf("AP: %s\n", root[i]["text"].asCString());
         } else if (!strcmp(cmd,"PrintJSON")) {
             if (!strcmp(root[i].get("type","").asCString(),"ItemSend")) {
                 if (map_player_id_name.at(root[i]["receiving"].asInt()) == ap_player_name || map_player_id_name.at(root[i]["item"]["player"].asInt()) != ap_player_name) continue;
-                ADD_TO_MSGQUEUE((map_item_id_name.at(root[i]["item"]["item"].asInt()) + " was sent"), 1);
-                ADD_TO_MSGQUEUE(("to " + map_player_id_name.at(root[i]["receiving"].asInt())), 0);
-                printf("AP: Item from %s to %s\n", map_player_id_name.at(root[i]["item"]["player"].asInt()).c_str(), map_player_id_name.at(root[i]["receiving"].asInt()).c_str());
+                AP_ItemSendMessage* msg = new AP_ItemSendMessage;
+                msg->type = AP_MessageType::ItemSend;
+                msg->item = map_item_id_name.at(root[i]["item"]["item"].asInt());
+                msg->recvPlayer = map_player_id_name.at(root[i]["receiving"].asInt());
+                msg->text = msg->item + std::string(" was sent to ") + msg->recvPlayer;
+                messageQueue.push_back(msg);
             } else if(!strcmp(root[i].get("type","").asCString(),"Hint")) {
-                printf("AP: Hint: Item %s from %s to %s at %s %s\n", map_item_id_name.at(root[i]["item"]["item"].asInt()).c_str(), map_player_id_name.at(root[i]["item"]["player"].asInt()).c_str(),
-                                                                 map_player_id_name.at(root[i]["receiving"].asInt()).c_str(), map_location_id_name.at(root[i]["item"]["location"].asInt()).c_str(),
-                                                                 (root[i]["found"].asBool() ? " (Checked)" : " (Unchecked)"));
+                AP_HintMessage* msg = new AP_HintMessage;
+                msg->type = AP_MessageType::Hint;
+                msg->item = map_item_id_name.at(root[i]["item"]["item"].asInt());
+                msg->sendPlayer = map_player_id_name.at(root[i]["item"]["player"].asInt());
+                msg->recvPlayer = map_player_id_name.at(root[i]["receiving"].asInt());
+                msg->location = map_location_id_name.at(root[i]["item"]["location"].asInt());
+                msg->checked = root[i]["found"].asBool();
+                msg->text = std::string("Item ") + msg->item + std::string(" from ") + msg->sendPlayer + std::string(" to ") + msg->recvPlayer + std::string(" at ") + msg->location + std::string((msg->checked ? " (Checked)" : " (Unchecked)"));
+                messageQueue.push_back(msg);
+            } else if (!strcmp(root[i].get("type","").asCString(),"Countdown")) {
+                AP_CountdownMessage* msg = new AP_CountdownMessage;
+                msg->type = AP_MessageType::Countdown;
+                msg->timer = root[i]["countdown"].asInt();
+                msg->text = root[i]["data"][0]["text"].asString();
+                messageQueue.push_back(msg);
+            } else {
+                AP_Message* msg = new AP_Message;
+                msg->text = "";
+                for (auto itr : root[i]["data"]) {
+                    if (itr.get("type","").asString() == "player_id") {
+                        msg->text += map_player_id_name[itr["text"].asInt()];
+                    } else if (itr.get("type","").asString() == "item_id") {
+                        msg->text += map_item_id_name[itr["text"].asInt()];
+                    } else if (itr.get("type","").asString() == "location_id") {
+                        msg->text += map_location_id_name[itr["text"].asInt()];
+                    } else if (itr.get("text","") != "") {
+                        msg->text += itr["text"].asString();
+                    }
+                }
+                messageQueue.push_back(msg);
             }
         } else if (!strcmp(cmd, "LocationInfo")) {
             //Uninteresting for now.
@@ -408,13 +433,12 @@ bool parse_response(std::string msg, std::string &request) {
                 notify = (item_idx == 0 && last_item_idx <= j && multiworld) || item_idx != 0;
                 (*getitemfunc)(item_id, notify);
                 if (queueitemrecvmsg && notify) {
-                    if (root[i]["items"][j]["player"] == ap_player_id) {
-                        ADD_TO_MSGQUEUE(map_item_id_name.at(item_id) + " received", 0);
-                    } else {
-                        ADD_TO_MSGQUEUE(map_item_id_name.at(item_id) + " received", 1);
-                        ADD_TO_MSGQUEUE(("From " + map_player_id_name.at(root[i]["items"][j]["player"].asInt())), 0);
-                    }
-                    
+                    AP_ItemRecvMessage* msg = new AP_ItemRecvMessage;
+                    msg->type = AP_MessageType::ItemRecv;
+                    msg->item = map_item_id_name.at(item_id);
+                    msg->sendPlayer = map_player_id_name.at(root[i]["items"][j]["player"].asInt());
+                    msg->text = std::string("Received ") + msg->item + std::string(" from ") + msg->sendPlayer;
+                    messageQueue.push_back(msg);
                 }
             }
             last_item_idx = item_idx == 0 ? root[i]["items"].size() : last_item_idx + root[i]["items"].size();
@@ -444,8 +468,6 @@ bool parse_response(std::string msg, std::string &request) {
                     if (!strcmp(root[i]["data"]["source"].asCString(), ap_player_name.c_str())) break; // We already paid our penance
                     deathlinkstat = true;
                     std::string out = root[i]["data"]["source"].asString() + " killed you";
-                    ADD_TO_MSGQUEUE(out, 0);
-                    printf(("AP: " + out).c_str());
                     if (recvdeath != nullptr) {
                         (*recvdeath)();
                     }
@@ -465,27 +487,21 @@ bool AP_IsMessagePending() {
     return !messageQueue.empty();
 }
 
-std::vector<std::string> AP_GetLatestMessage() {
-    int amount = messageQueue.front().second;
-    std::vector<std::string> msg;
-    for (int i = 0; i <= amount; i++) {
-        msg.push_back(messageQueue.at(i).first);
+AP_Message* AP_GetLatestMessage() {
+    return messageQueue.front();
+}
+
+void AP_ClearLatestMessage() {
+    if (AP_IsMessagePending()) {
+        delete messageQueue.front();
+        messageQueue.pop_front();
     }
-    return msg;
 }
 
 int AP_GetRoomInfo(AP_RoomInfo* client_roominfo) {
     if (!auth) return 1;
     *client_roominfo = lib_room_info;
     return 0;
-}
-
-void AP_ClearLatestMessage() {
-    int amount = messageQueue.front().second;
-    for (int i = 0; i <= amount; i++) {
-        messageQueue.pop_front();
-    }
-    messageQueue.shrink_to_fit();
 }
 
 AP_ConnectionStatus AP_GetConnectionStatus() {
