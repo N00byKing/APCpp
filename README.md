@@ -43,7 +43,7 @@ Faulty clients can send multiple deaths in quick succession. Ex.: Clear only aft
 Messages can be received from the Archipelago Server and this Library, such as Messages describing which item was sent, who was responsible for a Death received with DeathLink, etc.
 To receive messages:
 - Check if message is available using `AP_IsMessagePending()`
-- Receive with `AP_GetLatestMessage()`. This returns a String Vector representing a single message. When displayed, there should be line breaks as indicated by the seperation into a vector.
+- Receive with `AP_GetLatestMessage()`. This returns an AP_Message struct with a type and preconfigured presentable text for this message. If you want the game client to have more details for the message (for example to create a custom text) any non-plaintext type message can be casted to an AP_`TYPE`Message with some type-specific struct members providing additional information for the given message.
 - Clear the latest message with `AP_ClearLatestMessage()`.
 
 # Building
