@@ -135,7 +135,7 @@ enum AP_RequestStatus {
 };
 
 enum AP_DataType {
-    Raw, Int
+    Raw, Int, Double
 };
 
 struct AP_GetServerDataRequest {
@@ -145,11 +145,15 @@ struct AP_GetServerDataRequest {
     AP_DataType type;
 };
 
+struct AP_DataStorageOperation {
+    std::string operation;
+    void* value;
+};
+
 struct AP_SetServerDataRequest {
     AP_RequestStatus status;
     std::string key;
-    std::string operation;
-    void* value;
+    std::vector<AP_DataStorageOperation> operations;
     void* default_value;
     AP_DataType type;
     bool want_reply;

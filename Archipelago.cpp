@@ -405,6 +405,9 @@ bool parse_response(std::string msg, std::string &request) {
                     case AP_DataType::Int:
                         *((int*)target->value) = root[i]["keys"][itr].asInt();
                         break;
+                    case AP_DataType::Double:
+                        *((double*)target->value) = root[i]["keys"][itr].asDouble();
+                        break;
                     case AP_DataType::Raw:
                         *((std::string*)target->value) = writer.write(root[i]["keys"][itr]);
                         break;
@@ -422,6 +425,10 @@ bool parse_response(std::string msg, std::string &request) {
                     case AP_DataType::Int:
                         value = new int(root[i]["value"].asInt());
                         original_value = new int(root[i]["original_value"].asInt());
+                        break;
+                    case AP_DataType::Double:
+                        value = new double(root[i]["value"].asDouble());
+                        original_value = new double(root[i]["original_value"].asDouble());
                         break;
                     default:
                         value = new std::string(root[i]["value"].asString());
@@ -497,8 +504,12 @@ bool parse_response(std::string msg, std::string &request) {
             last_item_idx = item_idx == 0 ? root[i]["items"].size() : last_item_idx + root[i]["items"].size();
             AP_SetServerDataRequest request;
             request.key = "APCppLastRecv" + ap_player_name + std::to_string(ap_player_id);
-            request.operation = "replace";
-            request.value = &last_item_idx;
+            AP_DataStorageOperation replac;
+            replac.operation = "replace";
+            replac.value = &last_item_idx;
+            std::vector<AP_DataStorageOperation> operations;
+            operations.push_back(replac);
+            request.operations = operations;
             request.default_value = 0;
             request.type = AP_DataType::Int;
             request.want_reply = false;
@@ -584,19 +595,29 @@ void AP_SetServerData(AP_SetServerDataRequest* request) {
     req_t[0]["key"] = request->key;
     switch (request->type) {
         case AP_DataType::Int:
-            req_t[0]["operations"][0]["value"] = *((int*)request->value);
-            req_t[0]["default"] = *((int*)request->default_value);
+            for (int i = 0; i < request->operations.size(); i++) {
+                req_t[0]["operations"][i]["operation"] = request->operations[i].operation;
+                req_t[0]["operations"][i]["value"] = *((int*)request->operations[i].value);
+            }
+            break;
+        case AP_DataType::Double:
+            for (int i = 0; i < request->operations.size(); i++) {
+                req_t[0]["operations"][i]["operation"] = request->operations[i].operation;
+                req_t[0]["operations"][i]["value"] = *((double*)request->operations[i].value);
+            }
             break;
         default:
-            Json::Value data;
-            reader.parse((*(std::string*)request->value), data);
+            for (int i = 0; i < request->operations.size(); i++) {
+                req_t[0]["operations"][i]["operation"] = request->operations[i].operation;
+                Json::Value data;
+                reader.parse((*(std::string*)request->operations[i].value), data);
+                req_t[0]["operations"][i]["value"] = data;
+            }
             Json::Value default_val_json;
             reader.parse(*((std::string*)request->default_value), default_val_json);
-            req_t[0]["operations"][0]["value"] = data;
             req_t[0]["default"] = default_val_json;
             break;
     }
-    req_t[0]["operations"][0]["operation"] = request->operation;
     req_t[0]["want_reply"] = request->want_reply;
     map_serverdata_typemanage[request->key] = request->type;
     APSend(writer.write(req_t));
