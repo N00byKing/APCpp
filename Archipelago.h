@@ -173,6 +173,8 @@ void AP_SetServerData(AP_SetServerDataRequest* request);
 void AP_GetServerData(AP_GetServerDataRequest* request);
 
 // Parameter Function receives all SetReply's
+// ! Pointers in AP_SetReply struct only valid within function !
+// If values are required beyond that a copy is needed
 void AP_RegisterSetReplyCallback(void (*f_setreply)(AP_SetReply));
 
 // Receive all SetReplys with Keys in parameter list

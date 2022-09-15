@@ -366,7 +366,7 @@ bool parse_response(std::string msg, std::string &request) {
             for (std::string key : slotdata_strings) {
                 if (map_slotdata_callback_int.count(key)) {
                     (*map_slotdata_callback_int.at(key))(root[i]["slot_data"][key].asInt());
-                } else if (map_slotdata_callback_raw.count(key)) {
+                    } else if (map_slotdata_callback_raw.count(key)) {
                     (*map_slotdata_callback_raw.at(key))(root[i]["slot_data"][key].asString());
                 } else if (map_slotdata_callback_mapintint.count(key)) {
                     std::map<int,int> out;
@@ -427,28 +427,24 @@ bool parse_response(std::string msg, std::string &request) {
             if (setreplyfunc) {
                 AP_SetReply setreply;
                 std::string key = root[i]["key"].asString();
-                void* value;
-                void* original_value;
                 switch (map_serverdata_typemanage[key]) {
                     case AP_DataType::Int:
-                        value = new int(root[i]["value"].asInt());
-                        original_value = new int(root[i]["original_value"].asInt());
+                        setreply.value = new int(root[i]["value"].asInt());
+                        setreply.original_value = new int(root[i]["original_value"].asInt());
                         break;
                     case AP_DataType::Double:
-                        value = new double(root[i]["value"].asDouble());
-                        original_value = new double(root[i]["original_value"].asDouble());
+                        setreply.value = new double(root[i]["value"].asDouble());
+                        setreply.original_value = new double(root[i]["original_value"].asDouble());
                         break;
                     default:
-                        value = new std::string(root[i]["value"].asString());
-                        original_value = new std::string(root[i]["original_value"].asString());
+                        setreply.value = new std::string(root[i]["value"].asString());
+                        setreply.original_value = new std::string(root[i]["original_value"].asString());
                         break;
                 }
                 setreply.key = key;
-                setreply.value = value;
-                setreply.original_value = original_value;
                 (*setreplyfunc)(setreply);
-                free(setreply.value);
-                free(setreply.original_value);
+                delete setreply.value;
+                delete setreply.original_value;
             }
         } else if (!strcmp(cmd,"PrintJSON")) {
             if (!strcmp(root[i].get("type","").asCString(),"ItemSend")) {
