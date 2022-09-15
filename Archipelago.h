@@ -42,6 +42,7 @@ void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)());
 // Parameter Function receives Slotdata of respective type
 void AP_RegisterSlotDataIntCallback(std::string, void (*f_slotdata)(int));
 void AP_RegisterSlotDataMapIntIntCallback(std::string, void (*f_slotdata)(std::map<int,int>));
+void AP_RegisterSlotDataRawCallback(std::string, void (*f_slotdata)(std::string));
 
 /* Game Management Functions */
 

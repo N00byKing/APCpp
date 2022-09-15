@@ -66,6 +66,7 @@ std::chrono::steady_clock::time_point last_send_req = std::chrono::steady_clock:
 
 //Slot Data Stuff
 std::map<std::string, void (*)(int)> map_slotdata_callback_int;
+std::map<std::string, void (*)(std::string)> map_slotdata_callback_raw;
 std::map<std::string, void (*)(std::map<int,int>)> map_slotdata_callback_mapintint;
 std::vector<std::string> slotdata_strings;
 
@@ -275,6 +276,11 @@ void AP_RegisterSlotDataIntCallback(std::string key, void (*f_slotdata)(int)) {
     slotdata_strings.push_back(key);
 }
 
+void AP_RegisterSlotDataRawCallback(std::string key, void (*f_slotdata)(std::string)) {
+    map_slotdata_callback_raw[key] = f_slotdata;
+    slotdata_strings.push_back(key);
+}
+
 void AP_RegisterSlotDataMapIntIntCallback(std::string key, void (*f_slotdata)(std::map<int,int>)) {
     map_slotdata_callback_mapintint[key] = f_slotdata;
     slotdata_strings.push_back(key);
@@ -360,6 +366,8 @@ bool parse_response(std::string msg, std::string &request) {
             for (std::string key : slotdata_strings) {
                 if (map_slotdata_callback_int.count(key)) {
                     (*map_slotdata_callback_int.at(key))(root[i]["slot_data"][key].asInt());
+                } else if (map_slotdata_callback_raw.count(key)) {
+                    (*map_slotdata_callback_raw.at(key))(root[i]["slot_data"][key].asString());
                 } else if (map_slotdata_callback_mapintint.count(key)) {
                     std::map<int,int> out;
                     for (auto itr : root[i]["slot_data"][key].getMemberNames()) {
