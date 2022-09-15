@@ -298,6 +298,123 @@ void AP_DeathLinkClear() {
     deathlinkstat = false;
 }
 
+bool AP_IsMessagePending() {
+    return !messageQueue.empty();
+}
+
+AP_Message* AP_GetLatestMessage() {
+    return messageQueue.front();
+}
+
+void AP_ClearLatestMessage() {
+    if (AP_IsMessagePending()) {
+        delete messageQueue.front();
+        messageQueue.pop_front();
+    }
+}
+
+int AP_GetRoomInfo(AP_RoomInfo* client_roominfo) {
+    if (!auth) return 1;
+    *client_roominfo = lib_room_info;
+    return 0;
+}
+
+AP_ConnectionStatus AP_GetConnectionStatus() {
+    if (webSocket.getReadyState() == ix::ReadyState::Open) {
+        if (auth) {
+            return AP_ConnectionStatus::Authenticated;
+        } else {
+            return AP_ConnectionStatus::Connected;
+        }
+    }
+    return AP_ConnectionStatus::Disconnected;
+}
+
+int AP_GetUUID() {
+    return ap_uuid;
+}
+
+void AP_SetServerData(AP_SetServerDataRequest* request) {
+    // Rate Limiting
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - last_send_req).count() < 20) {
+        request->status = AP_RequestStatus::Error;
+        return;
+    }
+    last_send_req = std::chrono::steady_clock::now();
+
+    request->status = AP_RequestStatus::Pending;
+
+    Json::Value req_t;
+    req_t[0]["cmd"] = "Set";
+    req_t[0]["key"] = request->key;
+    switch (request->type) {
+        case AP_DataType::Int:
+            for (int i = 0; i < request->operations.size(); i++) {
+                req_t[0]["operations"][i]["operation"] = request->operations[i].operation;
+                req_t[0]["operations"][i]["value"] = *((int*)request->operations[i].value);
+            }
+            break;
+        case AP_DataType::Double:
+            for (int i = 0; i < request->operations.size(); i++) {
+                req_t[0]["operations"][i]["operation"] = request->operations[i].operation;
+                req_t[0]["operations"][i]["value"] = *((double*)request->operations[i].value);
+            }
+            break;
+        default:
+            for (int i = 0; i < request->operations.size(); i++) {
+                req_t[0]["operations"][i]["operation"] = request->operations[i].operation;
+                Json::Value data;
+                reader.parse((*(std::string*)request->operations[i].value), data);
+                req_t[0]["operations"][i]["value"] = data;
+            }
+            Json::Value default_val_json;
+            reader.parse(*((std::string*)request->default_value), default_val_json);
+            req_t[0]["default"] = default_val_json;
+            break;
+    }
+    req_t[0]["want_reply"] = request->want_reply;
+    map_serverdata_typemanage[request->key] = request->type;
+    APSend(writer.write(req_t));
+    request->status = AP_RequestStatus::Done;
+}
+
+void AP_RegisterSetReplyCallback(void (*f_setreply)(AP_SetReply)) {
+    setreplyfunc = f_setreply;
+}
+
+void AP_SetNotify(std::map<std::string,AP_DataType> keylist) {
+    Json::Value req_t;
+    req_t[0]["cmd"] = "SetNotify";
+    int i = 0;
+    for (std::pair<std::string,AP_DataType> keytypepair : keylist) {
+        req_t[0]["keys"][i] = keytypepair.first;
+        map_serverdata_typemanage[keytypepair.first] = keytypepair.second;
+        i++;
+    }
+    APSend(writer.write(req_t));
+}
+
+void AP_SetNotify(std::string key, AP_DataType type) {
+    std::map<std::string,AP_DataType> keylist;
+    keylist[key] = type;
+    AP_SetNotify(keylist);
+}
+
+void AP_GetServerData(AP_GetServerDataRequest* request) {
+    request->status = AP_RequestStatus::Pending;
+
+    if (map_server_data.find(request->key) != map_server_data.end()) return;
+
+    map_server_data[request->key] = request;
+
+    Json::Value req_t;
+    req_t[0]["cmd"] = "Get";
+    req_t[0]["keys"][0] = request->key;
+    APSend(writer.write(req_t));
+}
+
+// PRIV
+
 bool parse_response(std::string msg, std::string &request) {
     Json::Value root;
     reader.parse(msg, root);
@@ -425,26 +542,35 @@ bool parse_response(std::string msg, std::string &request) {
             }
         } else if (!strcmp(cmd,"SetReply")) {
             if (setreplyfunc) {
+                int int_val;
+                int int_orig_val;
+                double dbl_val;
+                double dbl_orig_val;
+                std::string raw_val;
+                std::string raw_orig_val;
                 AP_SetReply setreply;
-                std::string key = root[i]["key"].asString();
-                switch (map_serverdata_typemanage[key]) {
+                setreply.key = root[i]["key"].asString();
+                switch (map_serverdata_typemanage[setreply.key]) {
                     case AP_DataType::Int:
-                        setreply.value = new int(root[i]["value"].asInt());
-                        setreply.original_value = new int(root[i]["original_value"].asInt());
+                        int_val = root[i]["value"].asInt();
+                        int_orig_val = root[i]["original_value"].asInt();
+                        setreply.value = &int_val;
+                        setreply.original_value = &int_orig_val;
                         break;
                     case AP_DataType::Double:
-                        setreply.value = new double(root[i]["value"].asDouble());
-                        setreply.original_value = new double(root[i]["original_value"].asDouble());
+                        dbl_val = root[i]["value"].asDouble();
+                        dbl_orig_val = root[i]["original_value"].asDouble();
+                        setreply.value = &dbl_val;
+                        setreply.original_value = &dbl_orig_val;
                         break;
                     default:
-                        setreply.value = new std::string(root[i]["value"].asString());
-                        setreply.original_value = new std::string(root[i]["original_value"].asString());
+                        raw_val = root[i]["value"].asString();
+                        raw_orig_val = root[i]["original_value"].asString();
+                        setreply.value = &raw_val;
+                        setreply.original_value = &raw_orig_val;
                         break;
                 }
-                setreply.key = key;
                 (*setreplyfunc)(setreply);
-                delete setreply.value;
-                delete setreply.original_value;
             }
         } else if (!strcmp(cmd,"PrintJSON")) {
             if (!strcmp(root[i].get("type","").asCString(),"ItemSend")) {
@@ -547,123 +673,6 @@ bool parse_response(std::string msg, std::string &request) {
     }
     return false;
 }
-
-bool AP_IsMessagePending() {
-    return !messageQueue.empty();
-}
-
-AP_Message* AP_GetLatestMessage() {
-    return messageQueue.front();
-}
-
-void AP_ClearLatestMessage() {
-    if (AP_IsMessagePending()) {
-        delete messageQueue.front();
-        messageQueue.pop_front();
-    }
-}
-
-int AP_GetRoomInfo(AP_RoomInfo* client_roominfo) {
-    if (!auth) return 1;
-    *client_roominfo = lib_room_info;
-    return 0;
-}
-
-AP_ConnectionStatus AP_GetConnectionStatus() {
-    if (webSocket.getReadyState() == ix::ReadyState::Open) {
-        if (auth) {
-            return AP_ConnectionStatus::Authenticated;
-        } else {
-            return AP_ConnectionStatus::Connected;
-        }
-    }
-    return AP_ConnectionStatus::Disconnected;
-}
-
-int AP_GetUUID() {
-    return ap_uuid;
-}
-
-void AP_SetServerData(AP_SetServerDataRequest* request) {
-    // Rate Limiting
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - last_send_req).count() < 20) {
-        request->status = AP_RequestStatus::Error;
-        return;
-    }
-    last_send_req = std::chrono::steady_clock::now();
-
-    request->status = AP_RequestStatus::Pending;
-
-    Json::Value req_t;
-    req_t[0]["cmd"] = "Set";
-    req_t[0]["key"] = request->key;
-    switch (request->type) {
-        case AP_DataType::Int:
-            for (int i = 0; i < request->operations.size(); i++) {
-                req_t[0]["operations"][i]["operation"] = request->operations[i].operation;
-                req_t[0]["operations"][i]["value"] = *((int*)request->operations[i].value);
-            }
-            break;
-        case AP_DataType::Double:
-            for (int i = 0; i < request->operations.size(); i++) {
-                req_t[0]["operations"][i]["operation"] = request->operations[i].operation;
-                req_t[0]["operations"][i]["value"] = *((double*)request->operations[i].value);
-            }
-            break;
-        default:
-            for (int i = 0; i < request->operations.size(); i++) {
-                req_t[0]["operations"][i]["operation"] = request->operations[i].operation;
-                Json::Value data;
-                reader.parse((*(std::string*)request->operations[i].value), data);
-                req_t[0]["operations"][i]["value"] = data;
-            }
-            Json::Value default_val_json;
-            reader.parse(*((std::string*)request->default_value), default_val_json);
-            req_t[0]["default"] = default_val_json;
-            break;
-    }
-    req_t[0]["want_reply"] = request->want_reply;
-    map_serverdata_typemanage[request->key] = request->type;
-    APSend(writer.write(req_t));
-    request->status = AP_RequestStatus::Done;
-}
-
-void AP_RegisterSetReplyCallback(void (*f_setreply)(AP_SetReply)) {
-    setreplyfunc = f_setreply;
-}
-
-void AP_SetNotify(std::map<std::string,AP_DataType> keylist) {
-    Json::Value req_t;
-    req_t[0]["cmd"] = "SetNotify";
-    int i = 0;
-    for (std::pair<std::string,AP_DataType> keytypepair : keylist) {
-        req_t[0]["keys"][i] = keytypepair.first;
-        map_serverdata_typemanage[keytypepair.first] = keytypepair.second;
-        i++;
-    }
-    APSend(writer.write(req_t));
-}
-
-void AP_SetNotify(std::string key, AP_DataType type) {
-    std::map<std::string,AP_DataType> keylist;
-    keylist[key] = type;
-    AP_SetNotify(keylist);
-}
-
-void AP_GetServerData(AP_GetServerDataRequest* request) {
-    request->status = AP_RequestStatus::Pending;
-
-    if (map_server_data.find(request->key) != map_server_data.end()) return;
-
-    map_server_data[request->key] = request;
-
-    Json::Value req_t;
-    req_t[0]["cmd"] = "Get";
-    req_t[0]["keys"][0] = request->key;
-    APSend(writer.write(req_t));
-}
-
-// PRIV
 
 void APSend(std::string req) {
     if (webSocket.getReadyState() != ix::ReadyState::Open) {
