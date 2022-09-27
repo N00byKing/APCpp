@@ -20,6 +20,7 @@
 //Setup Stuff
 bool init = false;
 bool auth = false;
+bool refused = false;
 bool multiworld = true;
 int ap_player_id;
 std::string ap_player_name;
@@ -320,6 +321,9 @@ int AP_GetRoomInfo(AP_RoomInfo* client_roominfo) {
 }
 
 AP_ConnectionStatus AP_GetConnectionStatus() {
+    if (refused) {
+        return AP_ConnectionStatus::ConnectionRefused;
+    }
     if (webSocket.getReadyState() == ix::ReadyState::Open) {
         if (auth) {
             return AP_ConnectionStatus::Authenticated;
@@ -522,6 +526,7 @@ bool parse_response(std::string msg, std::string &request) {
             req_t[0]["cmd"] = "Sync";
             request = writer.write(req_t);
             auth = true;
+            refused = false;
             return true;
         } else if (!strcmp(cmd,"Retrieved")) {
             for (auto itr : root[i]["keys"].getMemberNames()) {
@@ -652,6 +657,7 @@ bool parse_response(std::string msg, std::string &request) {
             }
         } else if (!strcmp(cmd, "ConnectionRefused")) {
             auth = false;
+            refused = true;
             printf("AP: Archipelago Server has refused connection. Check Password / Name / IP and restart the Game.\n");
             fflush(stdout);
         } else if (!strcmp(cmd, "Bounced")) {

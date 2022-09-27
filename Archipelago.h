@@ -100,7 +100,7 @@ AP_Message* AP_GetLatestMessage();
 /* Connection Information Types */
 
 enum AP_ConnectionStatus {
-    Disconnected, Connected, Authenticated
+    Disconnected, Connected, Authenticated, ConnectionRefused
 };
 
 #define AP_PERMISSION_DISABLED 0b000
