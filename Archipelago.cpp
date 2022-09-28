@@ -17,6 +17,9 @@
 #include <utility>
 #include <vector>
 
+#define AP_OFFLINE_SLOT 1404
+#define AP_OFFLINE_NAME "You"
+
 //Setup Stuff
 bool init = false;
 bool auth = false;
@@ -143,6 +146,7 @@ void AP_Init(const char* filename) {
     savefile.close();
     sp_save_file.open((std::string(filename) + ".save").c_str());
     WriteSPSave();
+    ap_player_name = AP_OFFLINE_NAME;
 }
 
 void AP_Start() {
@@ -157,8 +161,12 @@ void AP_Start() {
         }
         Json::Value fake_msg;
         fake_msg[0]["cmd"] = "Connected";
-        fake_msg[0]["slot"] = 1404;
+        fake_msg[0]["slot"] = AP_OFFLINE_SLOT;
         fake_msg[0]["players"] = Json::arrayValue;
+        fake_msg[0]["players"][0]["team"] = 0;
+        fake_msg[0]["players"][0]["slot"] = AP_OFFLINE_SLOT;
+        fake_msg[0]["players"][0]["alias"] = AP_OFFLINE_NAME;
+        fake_msg[0]["players"][0]["name"] = AP_OFFLINE_NAME;
         fake_msg[0]["checked_locations"] = sp_save_root["checked_locations"];
         fake_msg[0]["slot_data"] = sp_ap_root["slot_data"];
         std::string req;
