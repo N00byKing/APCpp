@@ -538,7 +538,7 @@ bool parse_response(std::string msg, std::string &request) {
             return true;
         } else if (!strcmp(cmd,"Retrieved")) {
             for (auto itr : root[i]["keys"].getMemberNames()) {
-                if (!map_server_data.count(itr)) continue;
+                if (!map_server_data.count(itr) || root[i]["keys"][itr].isNull()) continue;
                 AP_GetServerDataRequest* target = map_server_data[itr];
                 switch (target->type) {
                     case AP_DataType::Int:
