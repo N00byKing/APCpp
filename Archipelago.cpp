@@ -40,24 +40,29 @@ bool deathlinksupported = false;
 bool enable_deathlink = false;
 int deathlink_amnesty = 0;
 int cur_deathlink_amnesty = 0;
+
+// Message System
 std::deque<AP_Message*> messageQueue;
+bool queueitemrecvmsg = true;
+
+// Data Maps
 std::map<int, std::string> map_player_id_name;
 std::map<int64_t, std::string> map_location_id_name;
 std::map<int64_t, std::string> map_item_id_name;
 
-//Callback function pointers
+// Callback function pointers
 void (*resetItemValues)();
 void (*getitemfunc)(int64_t,bool);
 void (*checklocfunc)(int64_t);
 void (*recvdeath)() = nullptr;
 void (*setreplyfunc)(AP_SetReply) = nullptr;
 
+// Serverdata Management
 std::map<std::string,AP_DataType> map_serverdata_typemanage;
-
-bool queueitemrecvmsg = true;
-
+AP_GetServerDataRequest resync_serverdata_request;
 int last_item_idx = 0;
 
+// Singleplayer Seed Info
 std::ofstream sp_save_file;
 Json::Value sp_save_root;
 
@@ -507,11 +512,10 @@ bool parse_response(std::string msg, std::string &request) {
                 
             }
 
-            AP_GetServerDataRequest serverdata_request;
-            serverdata_request.key = "APCppLastRecv" + ap_player_name + std::to_string(ap_player_id);
-            serverdata_request.value = &last_item_idx;
-            serverdata_request.type = AP_DataType::Int;
-            AP_GetServerData(&serverdata_request);
+            resync_serverdata_request.key = "APCppLastRecv" + ap_player_name + std::to_string(ap_player_id);
+            resync_serverdata_request.value = &last_item_idx;
+            resync_serverdata_request.type = AP_DataType::Int;
+            AP_GetServerData(&resync_serverdata_request);
 
             Json::Value req_t;
             req_t[0]["cmd"] = "GetDataPackage";
@@ -538,7 +542,7 @@ bool parse_response(std::string msg, std::string &request) {
             return true;
         } else if (!strcmp(cmd,"Retrieved")) {
             for (auto itr : root[i]["keys"].getMemberNames()) {
-                if (!map_server_data.count(itr) || root[i]["keys"][itr].isNull()) continue;
+                if (!map_server_data.count(itr)) continue;
                 AP_GetServerDataRequest* target = map_server_data[itr];
                 switch (target->type) {
                     case AP_DataType::Int:
