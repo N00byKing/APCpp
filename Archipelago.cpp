@@ -85,9 +85,13 @@ Json::FastWriter writer;
 
 Json::Value sp_ap_root;
 
+// PRIV Func Declarations Start
 bool parse_response(std::string msg, std::string &request);
 void APSend(std::string req);
 void WriteSPSave();
+std::string getItemName(int64_t id);
+std::string getLocationName(int64_t id);
+// PRIV Func Declarations End
 
 void AP_Init(const char* ip, const char* game, const char* player_name, const char* passwd) {
     multiworld = true;
@@ -206,11 +210,7 @@ void AP_SetClientVersion(AP_NetworkVersion* version) {
 }
 
 void AP_SendItem(int64_t idx) {
-    if (map_location_id_name.count(idx)) {
-        printf(("AP: Checked " + map_location_id_name.at(idx) + ". Informing Archipelago...\n").c_str());
-    } else {
-        printf("AP: Checked unknown location %d. Informing Archipelago...\n", idx);
-    }
+    printf(("AP: Checked " + getLocationName(idx) + ". Informing Archipelago...\n").c_str());
     if (multiworld) {
         Json::Value req_t;
         req_t[0]["cmd"] = "LocationChecks";
@@ -595,17 +595,17 @@ bool parse_response(std::string msg, std::string &request) {
                 if (map_player_id_name.at(root[i]["receiving"].asInt()) == ap_player_name || map_player_id_name.at(root[i]["item"]["player"].asInt()) != ap_player_name) continue;
                 AP_ItemSendMessage* msg = new AP_ItemSendMessage;
                 msg->type = AP_MessageType::ItemSend;
-                msg->item = map_item_id_name.at(root[i]["item"]["item"].asInt64());
+                msg->item = getItemName(root[i]["item"]["item"].asInt64());
                 msg->recvPlayer = map_player_id_name.at(root[i]["receiving"].asInt());
                 msg->text = msg->item + std::string(" was sent to ") + msg->recvPlayer;
                 messageQueue.push_back(msg);
             } else if(!strcmp(root[i].get("type","").asCString(),"Hint")) {
                 AP_HintMessage* msg = new AP_HintMessage;
                 msg->type = AP_MessageType::Hint;
-                msg->item = map_item_id_name.at(root[i]["item"]["item"].asInt64());
+                msg->item = getItemName(root[i]["item"]["item"].asInt64());
                 msg->sendPlayer = map_player_id_name.at(root[i]["item"]["player"].asInt());
                 msg->recvPlayer = map_player_id_name.at(root[i]["receiving"].asInt());
-                msg->location = map_location_id_name.at(root[i]["item"]["location"].asInt64());
+                msg->location = getLocationName(root[i]["item"]["location"].asInt64());
                 msg->checked = root[i]["found"].asBool();
                 msg->text = std::string("Item ") + msg->item + std::string(" from ") + msg->sendPlayer + std::string(" to ") + msg->recvPlayer + std::string(" at ") + msg->location + std::string((msg->checked ? " (Checked)" : " (Unchecked)"));
                 messageQueue.push_back(msg);
@@ -622,9 +622,9 @@ bool parse_response(std::string msg, std::string &request) {
                     if (itr.get("type","").asString() == "player_id") {
                         msg->text += map_player_id_name[itr["text"].asInt()];
                     } else if (itr.get("type","").asString() == "item_id") {
-                        msg->text += map_item_id_name[itr["text"].asInt64()];
+                        msg->text += getItemName(itr["text"].asInt64());
                     } else if (itr.get("type","").asString() == "location_id") {
-                        msg->text += map_location_id_name[itr["text"].asInt64()];
+                        msg->text += getLocationName(itr["text"].asInt64());
                     } else if (itr.get("text","") != "") {
                         msg->text += itr["text"].asString();
                     }
@@ -643,7 +643,7 @@ bool parse_response(std::string msg, std::string &request) {
                 if (queueitemrecvmsg && notify) {
                     AP_ItemRecvMessage* msg = new AP_ItemRecvMessage;
                     msg->type = AP_MessageType::ItemRecv;
-                    msg->item = map_item_id_name.at(item_id);
+                    msg->item = getItemName(item_id);
                     msg->sendPlayer = map_player_id_name.at(root[i]["items"][j]["player"].asInt());
                     msg->text = std::string("Received ") + msg->item + std::string(" from ") + msg->sendPlayer;
                     messageQueue.push_back(msg);
@@ -705,4 +705,12 @@ void WriteSPSave() {
     sp_save_file.seekp(0);
     sp_save_file << writer.write(sp_save_root).c_str();
     sp_save_file.flush();
+}
+
+std::string getItemName(int64_t id) {
+    return map_item_id_name.count(id) ? map_item_id_name.at(id) : std::string("Unknown Item") + std::to_string(id);
+}
+
+std::string getLocationName(int64_t id) {
+    return map_location_id_name.count(id) ? map_location_id_name.at(id) : std::string("Unknown Location") + std::to_string(id);
 }
