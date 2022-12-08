@@ -46,7 +46,7 @@ std::deque<AP_Message*> messageQueue;
 bool queueitemrecvmsg = true;
 
 // Data Maps
-std::map<int, std::string> map_player_id_name;
+std::map<int, std::string> map_player_id_alias;
 std::map<int64_t, std::string> map_location_id_name;
 std::map<int64_t, std::string> map_item_id_name;
 
@@ -142,7 +142,7 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
     );
     webSocket.setPingInterval(45);
 
-    map_player_id_name[0] = "Archipelago";
+    map_player_id_alias[0] = "Archipelago";
 }
 
 void AP_Init(const char* filename) {
@@ -492,7 +492,7 @@ bool parse_response(std::string msg, std::string &request) {
                 (*checklocfunc)(loc_id);
             }
             for (unsigned int j = 0; j < root[i]["players"].size(); j++) {
-                map_player_id_name.insert(std::pair<int,std::string>(root[i]["players"][j]["slot"].asInt(),root[i]["players"][j]["alias"].asString()));
+                map_player_id_alias.insert(std::pair<int,std::string>(root[i]["players"][j]["slot"].asInt(),root[i]["players"][j]["alias"].asString()));
             }
             if (root[i]["slot_data"].get("DeathLink", false).asBool() && deathlinksupported) enable_deathlink = true;
             deathlink_amnesty = root[i]["slot_data"].get("DeathLink_Amnesty", 0).asInt();
@@ -592,19 +592,19 @@ bool parse_response(std::string msg, std::string &request) {
             }
         } else if (!strcmp(cmd,"PrintJSON")) {
             if (!strcmp(root[i].get("type","").asCString(),"ItemSend")) {
-                if (map_player_id_name.at(root[i]["receiving"].asInt()) == ap_player_name || map_player_id_name.at(root[i]["item"]["player"].asInt()) != ap_player_name) continue;
+                if (map_player_id_alias.at(root[i]["receiving"].asInt()) == map_player_id_alias[ap_player_id] || map_player_id_alias.at(root[i]["item"]["player"].asInt()) != map_player_id_alias[ap_player_id]) continue;
                 AP_ItemSendMessage* msg = new AP_ItemSendMessage;
                 msg->type = AP_MessageType::ItemSend;
                 msg->item = getItemName(root[i]["item"]["item"].asInt64());
-                msg->recvPlayer = map_player_id_name.at(root[i]["receiving"].asInt());
+                msg->recvPlayer = map_player_id_alias.at(root[i]["receiving"].asInt());
                 msg->text = msg->item + std::string(" was sent to ") + msg->recvPlayer;
                 messageQueue.push_back(msg);
             } else if(!strcmp(root[i].get("type","").asCString(),"Hint")) {
                 AP_HintMessage* msg = new AP_HintMessage;
                 msg->type = AP_MessageType::Hint;
                 msg->item = getItemName(root[i]["item"]["item"].asInt64());
-                msg->sendPlayer = map_player_id_name.at(root[i]["item"]["player"].asInt());
-                msg->recvPlayer = map_player_id_name.at(root[i]["receiving"].asInt());
+                msg->sendPlayer = map_player_id_alias.at(root[i]["item"]["player"].asInt());
+                msg->recvPlayer = map_player_id_alias.at(root[i]["receiving"].asInt());
                 msg->location = getLocationName(root[i]["item"]["location"].asInt64());
                 msg->checked = root[i]["found"].asBool();
                 msg->text = std::string("Item ") + msg->item + std::string(" from ") + msg->sendPlayer + std::string(" to ") + msg->recvPlayer + std::string(" at ") + msg->location + std::string((msg->checked ? " (Checked)" : " (Unchecked)"));
@@ -620,7 +620,7 @@ bool parse_response(std::string msg, std::string &request) {
                 msg->text = "";
                 for (auto itr : root[i]["data"]) {
                     if (itr.get("type","").asString() == "player_id") {
-                        msg->text += map_player_id_name[itr["text"].asInt()];
+                        msg->text += map_player_id_alias[itr["text"].asInt()];
                     } else if (itr.get("type","").asString() == "item_id") {
                         msg->text += getItemName(itr["text"].asInt64());
                     } else if (itr.get("type","").asString() == "location_id") {
@@ -644,7 +644,7 @@ bool parse_response(std::string msg, std::string &request) {
                     AP_ItemRecvMessage* msg = new AP_ItemRecvMessage;
                     msg->type = AP_MessageType::ItemRecv;
                     msg->item = getItemName(item_id);
-                    msg->sendPlayer = map_player_id_name.at(root[i]["items"][j]["player"].asInt());
+                    msg->sendPlayer = map_player_id_alias.at(root[i]["items"][j]["player"].asInt());
                     msg->text = std::string("Received ") + msg->item + std::string(" from ") + msg->sendPlayer;
                     messageQueue.push_back(msg);
                 }
@@ -663,10 +663,14 @@ bool parse_response(std::string msg, std::string &request) {
             request.want_reply = false;
             AP_SetServerData(&request);
         } else if (!strcmp(cmd, "RoomUpdate")) {
+            //Sync checks with server
             for (unsigned int j = 0; j < root[i]["checked_locations"].size(); j++) {
-                //Sync checks with server
                 int64_t loc_id = root[i]["checked_locations"][j].asInt64();
                 (*checklocfunc)(loc_id);
+            }
+            //Update Player aliases if present
+            for (auto itr : root[i].get("players", Json::arrayValue)) {
+                map_player_id_alias[itr["slot"].asInt()] = itr["alias"].asString();
             }
         } else if (!strcmp(cmd, "ConnectionRefused")) {
             auth = false;
