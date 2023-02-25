@@ -196,6 +196,13 @@ struct AP_SetReply {
     void* value;
 };
 
+struct AP_Bounce {
+    std::vector<std::string>* games; // Can be null or empty, but must be set to either
+    std::vector<std::string>* slots; // Can be null or empty, but must be set to either
+    std::vector<std::string>* tags; // Can be null or empty, but must be set to either
+    std::string data; // Valid JSON Data. Can also be primitive (Numbers or literals)
+};
+
 /* Serverside Data Functions */
 
 // Set and Receive Data
@@ -216,3 +223,9 @@ void AP_RegisterSetReplyCallback(void (*f_setreply)(AP_SetReply));
 void AP_SetNotify(std::map<std::string,AP_DataType>);
 // Single Key version of above for convenience
 void AP_SetNotify(std::string, AP_DataType);
+
+// Send Bounce package
+void AP_SendBounce(AP_Bounce);
+
+// Receive Bounced packages. Disables automatic DeathLink management
+void AP_RegisterBouncedCallback(void (*f_bounced)(AP_Bounce));

@@ -63,6 +63,7 @@ void (*checklocfunc)(int64_t);
 void (*locinfofunc)(std::vector<AP_NetworkItem>) = nullptr;
 void (*recvdeath)() = nullptr;
 void (*setreplyfunc)(AP_SetReply) = nullptr;
+void (*bouncedfunc)(AP_Bounce) = nullptr;
 
 // Serverdata Management
 std::map<std::string,AP_DataType> map_serverdata_typemanage;
@@ -385,12 +386,16 @@ void AP_DeathLinkSend() {
     }
     cur_deathlink_amnesty = deathlink_amnesty;
     std::chrono::time_point<std::chrono::system_clock> timestamp = std::chrono::system_clock::now();
-    Json::Value req_t;
-    req_t[0]["cmd"] = "Bounce";
-    req_t[0]["data"]["time"] = std::chrono::duration_cast<std::chrono::seconds>(timestamp.time_since_epoch()).count();
-    req_t[0]["data"]["source"] = ap_player_name; // Name and Shame >:D
-    req_t[0]["tags"][0] = "DeathLink";
-    APSend(writer.write(req_t));
+    AP_Bounce b;
+    Json::Value v;
+    v["time"] = std::chrono::duration_cast<std::chrono::seconds>(timestamp.time_since_epoch()).count();
+    v["source"] = ap_player_name; // Name and Shame >:D
+    b.data = writer.write(v);
+    b.games = nullptr;
+    b.slots = nullptr;
+    std::vector<std::string> tags = {std::string("DeathLink")};
+    b.tags = &tags;
+    AP_SendBounce(b);
 }
 
 void AP_EnableQueueItemRecvMsgs(bool b) {
@@ -569,6 +574,32 @@ void AP_GetServerData(AP_GetServerDataRequest* request) {
 
 std::string AP_GetPrivateServerDataPrefix() {
     return "APCpp" + std::to_string(ap_player_name_hash) + "APCpp" + std::to_string(ap_player_id) + "APCpp";
+}
+
+void AP_SendBounce(AP_Bounce bounce) {
+    Json::Value req_t;
+    req_t[0]["cmd"] = "Bounce";
+
+    // Add targets for bounce, if requested
+    #define ADD_TARGETS( targets ) \
+            if (bounce.targets != nullptr && !bounce.targets->empty()) { \
+                for (int i = 0; i < bounce.targets->size(); i++) { \
+                    req_t[0][#targets].append((*(bounce.targets))[i]); \
+                } \
+            }
+    ADD_TARGETS(games)
+    ADD_TARGETS(slots)
+    ADD_TARGETS(tags)
+    #undef ADD_TARGETS
+
+    Json::Value data;
+    reader.parse(bounce.data, data);
+    req_t[0]["data"] = data;
+    APSend(writer.write(req_t));
+}
+
+void AP_RegisterBouncedCallback(void (*f_bounced)(AP_Bounce)) {
+    bouncedfunc = f_bounced;
 }
 
 // PRIV
@@ -876,20 +907,42 @@ bool parse_response(std::string msg, std::string &request) {
             printf("AP: Archipelago Server has refused connection. Check Password / Name / IP and restart the Game.\n");
             fflush(stdout);
         } else if (cmd == "Bounced") {
-            // Only expected Packages are DeathLink Packages. RIP
-            if (!enable_deathlink) continue;
-            for (unsigned int j = 0; j < root[i]["tags"].size(); j++) {
-                if (root[i]["tags"][j].asString() == "DeathLink") {
-                    // Suspicions confirmed ;-; But maybe we died, not them?
-                    if (root[i]["data"]["source"].asString() == ap_player_name) break; // We already paid our penance
-                    deathlinkstat = true;
-                    std::string out = root[i]["data"]["source"].asString() + " killed you";
-                    if (recvdeath != nullptr) {
-                        (*recvdeath)();
+            if (!enable_deathlink && bouncedfunc == nullptr) continue;
+            if (bouncedfunc == nullptr) {
+                // Only do native DeathLink handling, client is not interested in bounce packets
+                for (unsigned int j = 0; j < root[i]["tags"].size(); j++) {
+                    if (root[i]["tags"][j].asString() == "DeathLink") {
+                        // Suspicions confirmed ;-; But maybe we died, not them?
+                        if (root[i]["data"]["source"].asString() == ap_player_name) break; // We already paid our penance
+                        deathlinkstat = true;
+                        if (recvdeath != nullptr) {
+                            (*recvdeath)();
+                        }
+                        break;
                     }
-                    break;
                 }
+            } else {
+                AP_Bounce bounce;
+                std::vector<std::string> games;
+                std::vector<std::string> slots;
+                std::vector<std::string> tags;
+                // Add targets to bounce package
+                #define ADD_TARGETS( targets ) \
+                        if (root[i].isMember(#targets)) { \
+                            for (int j = 0; j < root[i][#targets].size(); j++) { \
+                                targets.push_back(root[i][#targets][j].asString()); \
+                            } \
+                            bounce.targets = &targets; \
+                        }
+                ADD_TARGETS(games)
+                ADD_TARGETS(slots)
+                ADD_TARGETS(tags)
+                #undef ADD_TARGETS
+
+                bounce.data = writer.write(root[i]["data"]);
+                (*bouncedfunc)(bounce);
             }
+            
         }
     }
     return false;
