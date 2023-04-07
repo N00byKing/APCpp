@@ -10,6 +10,7 @@ add_library(APCpp SHARED Archipelago.cpp Archipelago.h)
 
 set(BUILD_SHARED_LIBS OFF)
 
+set(USE_TLS ON CACHE BOOL "Enable TLS support" FORCE)
 add_subdirectory(IXWebSocket)
 include_directories(IXWebSocket)
 target_link_libraries(APCpp ixwebsocket)
@@ -17,6 +18,8 @@ target_link_libraries(APCpp ixwebsocket)
 if (MINGW)
     target_link_libraries(APCpp -static -static-libstdc++ -static-libgcc)
 endif(MINGW)
+
+# Attempt finding system version of JsonCpp
 find_package(PkgConfig)
 if (PKGCONFIG_FOUND AND (NOT MINGW))
     pkg_check_modules(JSONCPP jsoncpp)
@@ -26,6 +29,7 @@ if (PKGCONFIG_FOUND AND (NOT MINGW))
     endif(JSONCPP_FOUND)
 endif(PKGCONFIG_FOUND AND (NOT MINGW))
 
+# No system version: Enable bundled
 if((NOT JSONCPP_FOUND))
     add_subdirectory(jsoncpp)
     set_property(TARGET jsoncpp_static PROPERTY POSITION_INDEPENDENT_CODE ON)

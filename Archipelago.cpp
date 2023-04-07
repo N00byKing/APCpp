@@ -25,6 +25,7 @@ bool init = false;
 bool auth = false;
 bool refused = false;
 bool multiworld = true;
+bool isSSL = true;
 int ap_player_id;
 std::string ap_player_name;
 std::string ap_ip;
@@ -114,8 +115,7 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
 
     //Connect to server
     ix::initNetSystem();
-    std::string url("ws://" + ap_ip);
-    webSocket.setUrl(url);
+    webSocket.setUrl("wss://" + ap_ip);
     webSocket.setOnMessageCallback([](const ix::WebSocketMessagePtr& msg)
         {
             if (msg->type == ix::WebSocketMessageType::Message)
@@ -137,6 +137,11 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
                     map_server_data.erase(itr.first);
                 }
                 printf("AP: Error connecting to Archipelago. Retries: %d\n", msg->errorInfo.retries-1);
+                if (msg->errorInfo.retries-1 >= 2 && isSSL) {
+                    printf("AP: SSL connection failed. Attempting unencrypted...\n");
+                    webSocket.setUrl("ws://" + ap_ip);
+                    isSSL = false;
+                }
             }
         }
     );
