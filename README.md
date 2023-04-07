@@ -52,7 +52,7 @@ Clone the Repo recursively!
 - Create a folder `build`
 - `cd build`
 - `cmake ..`
-- `make`
+- `cmake --build .`
 ## Windows
 - Create a folder `build`
 - Enter the folder
