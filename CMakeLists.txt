@@ -8,9 +8,24 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 add_library(APCpp SHARED Archipelago.cpp Archipelago.h)
 
-set(BUILD_SHARED_LIBS OFF)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 
+# Enable TLS. On Windows, build mbedTLS
 set(USE_TLS ON CACHE BOOL "Enable TLS support" FORCE)
+if (WIN32 AND USE_TLS)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f mbedtls-3.4.0)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_SOURCE_DIR}/mbedtls-3.4.0.tar.gz)
+    set(USE_STATIC_MBEDTLS_LIBRARY ON CACHE BOOL "" FORCE)
+    set(MBEDTLS_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/mbedtls-3.4.0/include)
+    set(MBEDTLS_VERSION_GREATER_THAN_3 ${MBEDTLS_INCLUDE_DIRS})
+    set(MBEDTLS_LIBRARY mbedtls)
+    set(MBEDX509_LIBRARY mbedx509)
+    set(MBEDCRYPTO_LIBRARY mbedcrypto)
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mbedtls-3.4.0)
+endif (WIN32 AND USE_TLS)
+
+set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(IXWebSocket)
 include_directories(IXWebSocket)
 target_link_libraries(APCpp ixwebsocket)
@@ -31,6 +46,8 @@ endif(PKGCONFIG_FOUND AND (NOT MINGW))
 
 # No system version: Enable bundled
 if((NOT JSONCPP_FOUND))
+    set(JSONCPP_WITH_TESTS OFF CACHE BOOL "" FORCE)
+    set(JSONCPP_WITH_POST_BUILD_UNITTEST OFF CACHE BOOL "" FORCE)
     add_subdirectory(jsoncpp)
     set_property(TARGET jsoncpp_static PROPERTY POSITION_INDEPENDENT_CODE ON)
     include_directories(jsoncpp/include)
