@@ -64,9 +64,19 @@ enum AP_MessageType {
     Plaintext, ItemSend, ItemRecv, Hint, Countdown
 };
 
+enum AP_MessagePartType {
+    AP_NormalText, AP_LocationText, AP_ItemText, AP_PlayerText
+};
+
+struct AP_MessagePart {
+    std::string text;
+    AP_MessagePartType type;
+};
+
 struct AP_Message {
     AP_MessageType type = AP_MessageType::Plaintext;
     std::string text;
+    std::vector<AP_MessagePart> messageParts;
 };
 
 struct AP_ItemSendMessage : AP_Message {
