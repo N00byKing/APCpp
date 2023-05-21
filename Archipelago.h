@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <cstdint>
 
 void AP_Init(const char*, const char*, const char*, const char*);
 void AP_Init(const char*);
