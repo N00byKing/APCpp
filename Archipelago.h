@@ -61,7 +61,7 @@ void AP_DeathLinkSend();
 
 /* Message Management Types */
 
-enum AP_MessageType {
+enum struct AP_MessageType {
     Plaintext, ItemSend, ItemRecv, Hint, Countdown
 };
 
@@ -100,7 +100,7 @@ AP_Message* AP_GetLatestMessage();
 
 /* Connection Information Types */
 
-enum AP_ConnectionStatus {
+enum struct AP_ConnectionStatus {
     Disconnected, Connected, Authenticated, ConnectionRefused
 };
 
@@ -132,11 +132,11 @@ int AP_GetUUID();
 
 /* Serverside Data Types */
 
-enum AP_RequestStatus {
+enum struct AP_RequestStatus {
     Pending, Done, Error
 };
 
-enum AP_DataType {
+enum struct AP_DataType {
     Raw, Int, Double
 };
 
