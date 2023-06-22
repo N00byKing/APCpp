@@ -197,9 +197,9 @@ struct AP_SetReply {
 };
 
 struct AP_Bounce {
-    std::vector<std::string>* games; // Can be null or empty, but must be set to either
-    std::vector<std::string>* slots; // Can be null or empty, but must be set to either
-    std::vector<std::string>* tags; // Can be null or empty, but must be set to either
+    std::vector<std::string>* games = nullptr; // Can be nullptr or empty, but must be set to either
+    std::vector<std::string>* slots = nullptr; // Can be nullptr or empty, but must be set to either
+    std::vector<std::string>* tags  = nullptr; // Can be nullptr or empty, but must be set to either
     std::string data; // Valid JSON Data. Can also be primitive (Numbers or literals)
 };
 
