@@ -17,6 +17,13 @@ struct AP_NetworkVersion {
     int build;
 };
 
+struct AP_NetworkItem {
+    int64_t item;
+    int64_t location;
+    int player;
+    int flags;
+};
+
 // Set current client version
 void AP_SetClientVersion(AP_NetworkVersion*);
 
@@ -44,6 +51,11 @@ void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)());
 void AP_RegisterSlotDataIntCallback(std::string, void (*f_slotdata)(int));
 void AP_RegisterSlotDataMapIntIntCallback(std::string, void (*f_slotdata)(std::map<int,int>));
 void AP_RegisterSlotDataRawCallback(std::string, void (*f_slotdata)(std::string));
+
+// Send LocationScouts packet
+void AP_SendLocationScouts(std::vector<int64_t> const& locations, int create_as_hint);
+// Receive Function for LocationInfo
+void AP_SetLocationInfoCallback(void (*f_locrecv)(std::vector<AP_NetworkItem>));
 
 /* Game Management Functions */
 
