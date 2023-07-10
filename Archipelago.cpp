@@ -56,6 +56,7 @@ std::map<int64_t, std::string> map_item_id_name;
 void (*resetItemValues)();
 void (*getitemfunc)(int64_t,bool);
 void (*checklocfunc)(int64_t);
+void (*locinfofunc)(std::vector<AP_NetworkItem>) = nullptr;
 void (*recvdeath)() = nullptr;
 void (*setreplyfunc)(AP_SetReply) = nullptr;
 
@@ -247,6 +248,31 @@ void AP_SendItem(int64_t idx) {
     }
 }
 
+void AP_SendLocationScouts(std::vector<int64_t> const& locations, int create_as_hint) {
+    if (multiworld) {
+        Json::Value req_t;
+        req_t[0]["cmd"] = "LocationScouts";
+        req_t[0]["locations"] = Json::arrayValue;
+        for (int64_t loc : locations) {
+            req_t[0]["locations"].append(loc);
+        }
+        req_t[0]["create_as_hint"] = create_as_hint;
+        APSend(writer.write(req_t));
+    } else {
+        Json::Value fake_msg;
+        fake_msg[0]["cmd"] = "LocationInfo";
+        fake_msg[0]["locations"] = Json::arrayValue;
+        for (int64_t loc : locations) {
+            Json::Value netitem;
+            netitem["item"] = sp_ap_root["location_to_item"].get(std::to_string(loc), 0).asInt64();
+            netitem["location"] = loc;
+            netitem["player"] = ap_player_id;
+            netitem["flags"] = 0b001; // Hardcoded for SP seeds.
+            fake_msg[0]["locations"].append(netitem);
+        }
+    }
+}
+
 void AP_StoryComplete() {
     if (!multiworld) return;
     Json::Value req_t;
@@ -283,8 +309,12 @@ void AP_SetItemRecvCallback(void (*f_itemrecv)(int64_t,bool)) {
     getitemfunc = f_itemrecv;
 }
 
-void AP_SetLocationCheckedCallback(void (*f_locrecv)(int64_t)) {
-    checklocfunc = f_locrecv;
+void AP_SetLocationCheckedCallback(void (*f_loccheckrecv)(int64_t)) {
+    checklocfunc = f_loccheckrecv;
+}
+
+void AP_SetLocationInfoCallback(void (*f_locinfrecv)(std::vector<AP_NetworkItem>)) {
+    locinfofunc = f_locinfrecv;
 }
 
 void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)()) {
@@ -639,7 +669,16 @@ bool parse_response(std::string msg, std::string &request) {
                 messageQueue.push_back(msg);
             }
         } else if (!strcmp(cmd, "LocationInfo")) {
-            //Uninteresting for now.
+            std::vector<AP_NetworkItem> locations;
+            for (int j = 0; j < root[i]["locations"].size(); j++) {
+                AP_NetworkItem item;
+                item.item = root[i]["locations"][j]["item"].asInt64();
+                item.location = root[i]["locations"][j]["location"].asInt64();
+                item.player = root[i]["locations"][j]["player"].asInt();
+                item.flags = root[i]["locations"][j]["flags"].asInt();
+                locations.push_back(item);
+            }
+            locinfofunc(locations);
         } else if (!strcmp(cmd, "ReceivedItems")) {
             int item_idx = root[i]["index"].asInt();
             bool notify;
