@@ -673,7 +673,9 @@ bool parse_response(std::string msg, std::string &request) {
             for (int j = 0; j < root[i]["locations"].size(); j++) {
                 AP_NetworkItem item;
                 item.item = root[i]["locations"][j]["item"].asInt64();
+                item.itemName = getItemName(item.item);
                 item.location = root[i]["locations"][j]["location"].asInt64();
+                item.locationName = getLocationName(item.location);
                 item.player = root[i]["locations"][j]["player"].asInt();
                 item.flags = root[i]["locations"][j]["flags"].asInt();
                 locations.push_back(item);
