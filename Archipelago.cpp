@@ -679,6 +679,9 @@ bool parse_response(std::string msg, std::string &request) {
                 item.location = root[i]["locations"][j]["location"].asInt64();
                 item.player = root[i]["locations"][j]["player"].asInt();
                 item.flags = root[i]["locations"][j]["flags"].asInt();
+                item.itemName = getItemName(item.item);
+                item.locationName = getLocationName(item.location);
+                item.playerName = map_player_id_alias.at(item.player);
                 locations.push_back(item);
             }
             locinfofunc(locations);
