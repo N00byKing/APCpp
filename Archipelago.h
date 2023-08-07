@@ -19,11 +19,12 @@ struct AP_NetworkVersion {
 
 struct AP_NetworkItem {
     int64_t item;
-    std::string itemName;
     int64_t location;
-    std::string locationName;
     int player;
     int flags;
+    std::string itemName;
+    std::string locationName;
+    std::string playerName;
 };
 
 // Set current client version
