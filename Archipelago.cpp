@@ -14,6 +14,7 @@
 #include <deque>
 #include <string>
 #include <chrono>
+#include <functional>
 #include <utility>
 #include <vector>
 
@@ -29,6 +30,7 @@ bool isSSL = true;
 bool ssl_success = false;
 int ap_player_id;
 std::string ap_player_name;
+size_t ap_player_name_hash;
 std::string ap_ip;
 std::string ap_game;
 std::string ap_passwd;
@@ -89,6 +91,7 @@ Json::FastWriter writer;
 Json::Value sp_ap_root;
 
 // PRIV Func Declarations Start
+void AP_Init_Generic();
 bool parse_response(std::string msg, std::string &request);
 void APSend(std::string req);
 void WriteSPSave();
@@ -150,6 +153,7 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
     webSocket.setPingInterval(45);
 
     map_player_id_alias[0] = "Archipelago";
+    AP_Init_Generic();
 }
 
 void AP_Init(const char* filename) {
@@ -163,6 +167,7 @@ void AP_Init(const char* filename) {
     sp_save_file.open((std::string(filename) + ".save").c_str());
     WriteSPSave();
     ap_player_name = AP_OFFLINE_NAME;
+    AP_Init_Generic();
 }
 
 void AP_Start() {
@@ -466,7 +471,15 @@ void AP_GetServerData(AP_GetServerDataRequest* request) {
     APSend(writer.write(req_t));
 }
 
+std::string AP_GetPrivateServerDataPrefix() {
+    return "APCpp" + std::to_string(ap_player_name_hash) + "APCpp" + std::to_string(ap_player_id) + "APCpp";
+}
+
 // PRIV
+
+void AP_Init_Generic() {
+    ap_player_name_hash = std::hash<std::string>{}(ap_player_name);
+}
 
 bool parse_response(std::string msg, std::string &request) {
     Json::Value root;

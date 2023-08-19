@@ -188,6 +188,11 @@ struct AP_SetReply {
 void AP_SetServerData(AP_SetServerDataRequest* request);
 void AP_GetServerData(AP_GetServerDataRequest* request);
 
+// This returns a string prefix, consistent across game connections and unique to the player slot.
+// Intended to be used for getting / setting private server data
+// No guarantees are made regarding the content of the prefix!
+std::string AP_GetPrivateServerDataPrefix();
+
 // Parameter Function receives all SetReply's
 // ! Pointers in AP_SetReply struct only valid within function !
 // If values are required beyond that a copy is needed
