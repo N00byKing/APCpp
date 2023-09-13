@@ -635,8 +635,8 @@ bool parse_response(std::string msg, std::string &request) {
                         setreply.original_value = &dbl_orig_val;
                         break;
                     default:
-                        raw_val = root[i]["value"].asString();
-                        raw_orig_val = root[i]["original_value"].asString();
+                        raw_val =  writer.write(root[i]["value"]);
+                        raw_orig_val = writer.write(root[i]["original_value"]);
                         setreply.value = &raw_val;
                         setreply.original_value = &raw_orig_val;
                         break;
