@@ -76,7 +76,6 @@ AP_RoomInfo lib_room_info;
 
 //Server Data Stuff
 std::map<std::string, AP_GetServerDataRequest*> map_server_data;
-std::chrono::steady_clock::time_point last_send_req = std::chrono::steady_clock::now();
 
 //Slot Data Stuff
 std::map<std::string, void (*)(int)> map_slotdata_callback_int;
@@ -102,7 +101,7 @@ std::string getLocationName(int64_t id);
 void AP_Init(const char* ip, const char* game, const char* player_name, const char* passwd) {
     multiworld = true;
     
-    auto milliseconds_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(last_send_req.time_since_epoch()).count();
+    uint64_t milliseconds_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     rando = std::mt19937(milliseconds_since_epoch);
 
     if (!strcmp(ip,"")) {
@@ -393,13 +392,6 @@ int AP_GetUUID() {
 }
 
 void AP_SetServerData(AP_SetServerDataRequest* request) {
-    // Rate Limiting
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - last_send_req).count() < 20) {
-        request->status = AP_RequestStatus::Error;
-        return;
-    }
-    last_send_req = std::chrono::steady_clock::now();
-
     request->status = AP_RequestStatus::Pending;
 
     Json::Value req_t;
