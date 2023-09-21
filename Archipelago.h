@@ -195,6 +195,16 @@ struct AP_SetReply {
 void AP_SetServerData(AP_SetServerDataRequest* request);
 void AP_GetServerData(AP_GetServerDataRequest* request);
 
+/* Set and Receive Data in bulk. These request will be queued up in a (shared) queue, and sent in one packet to Archipelago one one of the following is called:
+ * - AP_CommitServerData()
+ * - Either of AP_GetServerData() or AP_SetServerData()
+ */
+void AP_BulkSetServerData(AP_SetServerDataRequest* requests);
+void AP_BulkGetServerData(AP_GetServerDataRequest* requests);
+
+// Commits bulk server data requests
+void AP_CommitServerData();
+
 // This returns a string prefix, consistent across game connections and unique to the player slot.
 // Intended to be used for getting / setting private server data
 // No guarantees are made regarding the content of the prefix!
