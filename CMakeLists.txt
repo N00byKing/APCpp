@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-add_library(APCpp SHARED Archipelago.cpp)
+add_library(APCpp SHARED Archipelago.cpp Archipelago_Gifting.cpp)
 set_target_properties(APCpp PROPERTIES PUBLIC_HEADER Archipelago.h)
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
