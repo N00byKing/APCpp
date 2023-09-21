@@ -185,7 +185,7 @@ struct AP_SetServerDataRequest {
     AP_RequestStatus status;
     std::string key;
     std::vector<AP_DataStorageOperation> operations;
-    void* default_value;
+    void* default_value = nullptr;
     AP_DataType type;
     bool want_reply;
 };
@@ -239,3 +239,58 @@ void AP_SendBounce(AP_Bounce);
 
 // Receive Bounced packages. Disables automatic DeathLink management
 void AP_RegisterBouncedCallback(void (*f_bounced)(AP_Bounce));
+
+/* Gifting API Types */
+
+struct AP_GiftBoxProperties {
+    bool IsOpen = false;
+    bool AcceptsAnyGift = false;
+    std::vector<std::string> DesiredTraits;
+};
+
+struct AP_GiftTrait {
+    std::string Trait;
+    double Quality = 1.;
+    double Duration = 1.;
+};
+
+struct AP_Gift {
+    std::string ID;
+    std::string ItemName;
+    #warning TODO clear up specs for Amount, ItemValue
+    size_t Amount;
+    size_t ItemValue;
+    std::vector<AP_GiftTrait> Traits;
+    std::string Sender;
+    std::string Receiver;
+    //int SenderTeam;
+    //int ReceiverTeam;
+    bool IsRefund;
+};
+
+/*
+ * Gifting API Functions
+ * 
+ * These functions wrap around the DataStorage functions, but work in a blocking manner
+ * They are only usable once authenticated. Be sure you are connected before using.
+ * However, even if not all functions with possible data loss will report errors on connection loss.
+ */
+
+// Sets up Gift Box according to specifications given. Must be called at least once before sending / receiving gifts
+void AP_SetGiftBoxProperties(AP_GiftBoxProperties props);
+
+// Returns information on all Gift Boxes on the server as a map of <Team,PlayerName> -> GiftBoxProperties.
+// This data is cached by the library, and attempting to send to someone who has no or a closed giftbox the last time this function was called will always fail
+std::map<std::pair<int,std::string>,AP_GiftBoxProperties> AP_QueryGiftBoxes();
+
+// Get currently available Gifts in own gift box
+std::map<std::string,AP_GiftBoxProperties> AP_CheckGifts();
+
+// Send a Gift.
+AP_RequestStatus AP_SendItem(AP_Gift gift);
+
+// Accept a gift from the Giftbox, and writes it into a struct in the second parameter. ONLY THIS DATA IS "REAL", DO NOT REUSE DATA FROM AP_CheckGifts()
+AP_RequestStatus AP_AcceptGift(std::string id, AP_Gift* gift);
+
+// Reject a gift from the Giftbox, and refund it.
+AP_RequestStatus AP_RejectGift(std::string id);
