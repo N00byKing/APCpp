@@ -451,8 +451,10 @@ void AP_BulkSetServerData(AP_SetServerDataRequest* request) {
                 req_t["operations"][i]["value"] = data;
             }
             Json::Value default_val_json;
-            reader.parse(*((std::string*)request->default_value), default_val_json);
-            req_t["default"] = default_val_json;
+            if (request->default_value != nullptr) {
+                reader.parse(*((std::string*)request->default_value), default_val_json);
+                req_t["default"] = default_val_json;
+            }
             break;
     }
     req_t["want_reply"] = request->want_reply;
