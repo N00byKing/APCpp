@@ -29,11 +29,12 @@ AP_RequestStatus sendGiftInternal(AP_Gift gift);
 
 #define AP_PLAYER_GIFTBOX_KEY ("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(ap_player_id))
 
-void AP_SetGiftBoxProperties(AP_GiftBoxProperties props) {
+AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props) {
     // Create Local Box if needed
     AP_SetServerDataRequest req_local_box;
     req_local_box.key = AP_PLAYER_GIFTBOX_KEY;
     std::string LocalGiftBoxDef_s = writer.write(Json::objectValue);
+    req_local_box.default_value = &LocalGiftBoxDef_s;
     req_local_box.operations = {{"default", &LocalGiftBoxDef_s}};
     req_local_box.type = AP_DataType::Raw;
     req_local_box.want_reply = true;
@@ -67,10 +68,13 @@ void AP_SetGiftBoxProperties(AP_GiftBoxProperties props) {
     // Set Values
     AP_CommitServerData();
     while (req_local_box.status == AP_RequestStatus::Pending && req_global_box.status == AP_RequestStatus::Pending && AP_GetConnectionStatus() == AP_ConnectionStatus::Authenticated) {}
+    if (req_global_box.status != AP_RequestStatus::Done || req_local_box.status != AP_RequestStatus::Done)
+        return AP_RequestStatus::Error;
+    return AP_RequestStatus::Done;
 }
 
 std::map<std::pair<int,std::string>,AP_GiftBoxProperties> AP_QueryGiftBoxes() {
-    std::map<std::pair<int,std::string>,AP_GiftBoxProperties> res;
+    map_players_to_giftbox.clear();
     std::map<int,std::string> team_data;
     std::map<int,AP_GetServerDataRequest> team_reqs;
     for (int team : teams_set) {
@@ -94,7 +98,7 @@ std::map<std::pair<int,std::string>,AP_GiftBoxProperties> AP_QueryGiftBoxes() {
         if (done) break;
     }
 
-    if (AP_GetConnectionStatus() != AP_ConnectionStatus::Authenticated) return res; // Connection Loss occured
+    if (AP_GetConnectionStatus() != AP_ConnectionStatus::Authenticated) return map_players_to_giftbox; // Connection Loss occured
 
     // Write back data if present
     for (int team : teams_set) {
@@ -103,18 +107,17 @@ std::map<std::pair<int,std::string>,AP_GiftBoxProperties> AP_QueryGiftBoxes() {
         reader.parse(team_data[team], json_data);
         for(std::string motherbox_slot : json_data.getMemberNames()) {
             int slot = atoi(motherbox_slot.c_str());
-            Json::Value team_root = json_data[std::to_string(team)];
-            res[{team,map_player_id_alias[slot]}].IsOpen = team_root.get("IsOpen",false).asBool();
-            res[{team,map_player_id_alias[slot]}].AcceptsAnyGift = team_root.get("AcceptsAnyGift",false).asBool();
+            Json::Value player_global_props = json_data[motherbox_slot];
+            map_players_to_giftbox[{team,map_player_id_alias[slot]}].IsOpen = player_global_props.get("IsOpen",false).asBool();
+            map_players_to_giftbox[{team,map_player_id_alias[slot]}].AcceptsAnyGift = player_global_props.get("AcceptsAnyGift",false).asBool();
             std::vector<std::string> DesiredTraits;
-            for (int i = 0; i < team_root["DesiredTraits"].size(); i++) {
-                DesiredTraits.push_back(team_root["DesiredTraits"][i].asString());
+            for (int i = 0; i < player_global_props["DesiredTraits"].size(); i++) {
+                DesiredTraits.push_back(player_global_props["DesiredTraits"][i].asString());
             }
-            res[{team,map_player_id_alias[slot]}].DesiredTraits = DesiredTraits;
+            map_players_to_giftbox[{team,map_player_id_alias[slot]}].DesiredTraits = DesiredTraits;
         }
     }
-    map_players_to_giftbox = res;
-    return res;
+    return map_players_to_giftbox;
 }
 
 // Get currently available Gifts in own gift box
@@ -125,6 +128,8 @@ std::map<std::string,AP_Gift> AP_CheckGifts() {
 AP_RequestStatus AP_SendGift(AP_Gift gift) {
     if (gift.IsRefund) return AP_RequestStatus::Error;
     if (map_players_to_giftbox[{gift.ReceiverTeam, gift.Receiver}].IsOpen == true) {
+        gift.SenderTeam = ap_player_team;
+        gift.Sender = map_player_id_alias[ap_player_id];
         return sendGiftInternal(gift);
     }
     return AP_RequestStatus::Error;
@@ -205,7 +210,7 @@ AP_RequestStatus sendGiftInternal(AP_Gift gift) {
         uint64_t random1 = rando();
         uint64_t random2 = rando();
         std::ostringstream id;
-        id << std::hex << std::to_string(random1) << std::to_string(random2);
+        id << std::hex << random1 << random2;
         giftVal["ID"] = id.str();
     }
     giftVal["ItemName"] = gift.ItemName;
@@ -223,19 +228,21 @@ AP_RequestStatus sendGiftInternal(AP_Gift gift) {
     giftVal["SenderTeam"] = gift.SenderTeam;
     giftVal["ReceiverTeam"] = gift.ReceiverTeam;
     giftVal["IsRefund"] = gift.IsRefund;
-    std::string gift_s = writer.write(giftVal);
+    Json::Value player_box_update;
+    player_box_update[giftVal["ID"].asString()] = giftVal;
+    std::string gift_s = writer.write(player_box_update);
 
     AP_SetServerDataRequest req;
     req.key = giftbox_key;
     req.type = AP_DataType::Raw;
-    req.want_reply = false;
+    req.want_reply = true;
     Json::Value defVal = Json::objectValue;
     std::string defVal_s = writer.write(defVal);
     req.default_value = &defVal_s;
 
     req.operations = {
         {"default", &defVal_s},
-        {"push", &gift_s}
+        {"update", &gift_s}
     };
 
     AP_SetServerData(&req);
