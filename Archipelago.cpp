@@ -41,7 +41,7 @@ std::string ap_ip;
 std::string ap_game;
 std::string ap_passwd;
 std::uint64_t ap_uuid = 0;
-std::mt19937 rando;
+std::mt19937_64 rando;
 AP_NetworkVersion client_version = AP_DEFAULT_NETWORK_VERSION; 
 
 //Deathlink Stuff
@@ -76,6 +76,9 @@ void (*bouncedfunc)(AP_Bounce) = nullptr;
 std::map<std::string,AP_DataType> map_serverdata_typemanage;
 AP_GetServerDataRequest resync_serverdata_request;
 size_t last_item_idx = 0;
+
+// Gifting interop
+void handleGiftAPISetReply(AP_SetReply reply);
 
 // Singleplayer Seed Info
 std::string sp_save_path;
@@ -121,7 +124,7 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
     multiworld = true;
     
     uint64_t milliseconds_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    rando = std::mt19937(milliseconds_since_epoch);
+    rando = std::mt19937_64(milliseconds_since_epoch);
 
     if (!strcmp(ip,"")) {
         ip = "archipelago.gg:38281";
@@ -699,6 +702,8 @@ bool parse_response(std::string msg, std::string &request) {
             ap_player_team = root[i]["team"].asInt();
             (*resetItemValues)();
 
+            AP_SetNotify("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(ap_player_id), AP_DataType::Raw);
+
             for (unsigned int j = 0; j < root[i]["checked_locations"].size(); j++) {
                 //Sync checks with server
                 int64_t loc_id = root[i]["checked_locations"][j].asInt64();
@@ -807,6 +812,17 @@ bool parse_response(std::string msg, std::string &request) {
                 map_server_data.erase(itr);
             }
         } else if (cmd == "SetReply") {
+            if (root[i]["key"].asString().rfind("GiftBox", 0) == 0) {
+                // Reserved by library. Used for Gifting API
+                std::string raw_val;
+                std::string raw_orig_val;
+                AP_SetReply setreply;
+                raw_val =  writer.write(root[i]["value"]);
+                raw_orig_val = writer.write(root[i]["original_value"]);
+                setreply.value = &raw_val;
+                setreply.original_value = &raw_orig_val;
+                handleGiftAPISetReply(setreply);
+            }
             if (setreplyfunc) {
                 int int_val;
                 int int_orig_val;
