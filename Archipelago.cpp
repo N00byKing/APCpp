@@ -707,6 +707,7 @@ bool parse_response(std::string msg, std::string &request) {
                 AP_SetReply setreply;
                 raw_val =  writer.write(root[i]["value"]);
                 raw_orig_val = writer.write(root[i]["original_value"]);
+                setreply.key = root[i]["key"].asString();
                 setreply.value = &raw_val;
                 setreply.original_value = &raw_orig_val;
                 handleGiftAPISetReply(setreply);
