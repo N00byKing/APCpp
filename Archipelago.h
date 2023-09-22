@@ -279,7 +279,7 @@ struct AP_Gift {
  */
 
 // Sets up Gift Box according to specifications given. Must be called at least once before sending / receiving gifts, or querying available gifts
-void AP_SetGiftBoxProperties(AP_GiftBoxProperties props);
+AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props);
 
 // Returns information on all Gift Boxes on the server as a map of <Team,PlayerName> -> GiftBoxProperties.
 // This data is cached by the library, and attempting to send to someone who has no or a closed giftbox the last time this function was called will always fail
@@ -289,7 +289,7 @@ std::map<std::pair<int,std::string>,AP_GiftBoxProperties> AP_QueryGiftBoxes();
 std::map<std::string,AP_Gift> AP_CheckGifts();
 
 // Send a Gift. DO *NOT* SEND REFUNDS HERE! Use AP_RejectGift for refunds
-// IDs are set by the library. The value set will be ignored
+// IDs and Sender Info are set by the library. The values set will be ignored
 AP_RequestStatus AP_SendGift(AP_Gift gift);
 
 // Accept a gift from the Giftbox, and writes it into a struct in the second parameter. ONLY THIS DATA IS "REAL", DO NOT REUSE DATA FROM AP_CheckGifts()
