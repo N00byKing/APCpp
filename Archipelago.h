@@ -263,7 +263,7 @@ AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props);
 std::map<std::pair<int,std::string>,AP_GiftBoxProperties> AP_QueryGiftBoxes();
 
 // Get currently available Gifts in own gift box
-std::map<std::string,AP_Gift> AP_CheckGifts();
+std::vector<AP_Gift> AP_CheckGifts();
 
 // Send a Gift. DO *NOT* SEND REFUNDS HERE! Use AP_RejectGift for refunds
 // IDs and Sender Info are set by the library. The values set will be ignored
