@@ -1,4 +1,5 @@
 #include "Archipelago.h"
+#include <chrono>
 #include <json/json.h>
 #include <json/value.h>
 #include <json/writer.h>
@@ -22,6 +23,8 @@ extern std::map<std::string, int> map_player_alias_id;
 // Stuff that is only used for Gifting
 std::map<std::pair<int,std::string>,AP_GiftBoxProperties> map_players_to_giftbox;
 std::vector<AP_Gift> cur_gifts_available;
+bool autoReject = true;
+std::chrono::seconds last_giftbox_sync = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch());
 
 // PRIV Func Declarations Start
 AP_RequestStatus sendGiftInternal(AP_Gift gift);
@@ -172,6 +175,10 @@ AP_RequestStatus AP_RejectGift(std::string id) {
     return AP_RequestStatus::Error;
 }
 
+void AP_UseGiftAutoReject(bool enable) {
+    autoReject = enable;
+}
+
 // PRIV
 void handleGiftAPISetReply(AP_SetReply reply) {
     if (reply.key == AP_PLAYER_GIFTBOX_KEY) {
@@ -198,10 +205,38 @@ void handleGiftAPISetReply(AP_SetReply reply) {
             gift.IsRefund = local_giftbox[gift_id].get("IsRefund", false).asBool();
             cur_gifts_available.push_back(gift);
         }
+        // Perform auto-reject if giftbox closed, or traits do not match
+        if (autoReject) {
+            std::vector<AP_Gift> gifts = AP_CheckGifts();
+            AP_GiftBoxProperties local_box_props = map_players_to_giftbox[{ap_player_team,map_player_id_alias[ap_player_id]}];
+            for (AP_Gift gift : gifts) {
+                if (!local_box_props.IsOpen) {
+                    AP_RejectGift(gift.ID);
+                    continue;
+                }
+                if (!local_box_props.AcceptsAnyGift) {
+                    bool found = false;
+                    for (AP_GiftTrait trait_have : gift.Traits) {
+                        for (std::string trait_want : local_box_props.DesiredTraits) {
+                            if (trait_have.Trait == trait_want) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) break;
+                    }
+                    if (!found) AP_RejectGift(gift.ID);
+                }
+            }
+        }
     }
 }
 
 AP_RequestStatus sendGiftInternal(AP_Gift gift) {
+    if (gift.IsRefund && gift.Sender == map_player_id_alias[ap_player_id]) {
+        // Loop detected! Rejecting a gift to yourself means you dont want what is in here. Should be safe to return success immediately
+        return AP_RequestStatus::Done;
+    }
     std::string giftbox_key = "GiftBox;";
     if (!gift.IsRefund)
         giftbox_key += std::to_string(gift.ReceiverTeam) + ";" + std::to_string(map_player_alias_id[gift.Receiver]);
@@ -252,6 +287,10 @@ AP_RequestStatus sendGiftInternal(AP_Gift gift) {
 
     AP_SetServerData(&req);
     while (req.status == AP_RequestStatus::Pending && AP_GetConnectionStatus() == AP_ConnectionStatus::Authenticated) {}
+    std::chrono::seconds time_since_sync = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch() - last_giftbox_sync);
+    if (time_since_sync.count() >= 300) {
+        AP_QueryGiftBoxes();
+    }
 
     return req.status;
 }
