@@ -283,6 +283,9 @@ AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props);
 
 // Returns information on all Gift Boxes on the server as a map of <Team,PlayerName> -> GiftBoxProperties.
 // This data is cached by the library, and attempting to send to someone who has no or a closed giftbox the last time this function was called will always fail
+// Additionally, this cache will be refreshed after the client attempts to send a gift (whether refund or new) 5 minutes after the last time the Gift Box information was pulled
+// This tries to minimize the amount of erroneous gifts sent, should someone close their giftbox / change their DesiredTraits.
+// Thus, should sending a gift fail, it might be that your Gift Box info is outdated. Refresh using this function.
 std::map<std::pair<int,std::string>,AP_GiftBoxProperties> AP_QueryGiftBoxes();
 
 // Get currently available Gifts in own gift box
@@ -297,3 +300,8 @@ AP_RequestStatus AP_AcceptGift(std::string id, AP_Gift* gift);
 
 // Reject a gift from the Giftbox, and refund it.
 AP_RequestStatus AP_RejectGift(std::string id);
+
+// Automatically reject gifts if they are sent while giftbox is closed, or if they do not match a desired trait and AcceptAnyGift was set to false
+// This is mainly a "consistency checker", but could be expensive to use compared to letting the player reject gifts manually, as this will scan all incoming gifts!
+// It is enabled by default, but performance impact may mean that it needs to be disabled depending on game and server environment (such as clients that automatically send gifts, unaware that the giftbox is closed)
+void AP_UseGiftAutoReject(bool enable);
