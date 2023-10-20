@@ -68,7 +68,7 @@ AP_GetServerDataRequest resync_serverdata_request;
 int last_item_idx = 0;
 
 // Singleplayer Seed Info
-std::ofstream sp_save_file;
+std::string sp_save_path;
 Json::Value sp_save_root;
 
 //Misc Data for Clients
@@ -83,6 +83,10 @@ std::map<std::string, void (*)(std::string)> map_slotdata_callback_raw;
 std::map<std::string, void (*)(std::map<int,int>)> map_slotdata_callback_mapintint;
 std::vector<std::string> slotdata_strings;
 
+// Caching
+std::string const datapkg_cache_path = "APCpp_datapkg.cache";
+Json::Value datapkg_cache;
+
 ix::WebSocket webSocket;
 Json::Reader reader;
 Json::FastWriter writer;
@@ -93,9 +97,10 @@ Json::Value sp_ap_root;
 void AP_Init_Generic();
 bool parse_response(std::string msg, std::string &request);
 void APSend(std::string req);
-void WriteSPSave();
+void WriteFileJSON(Json::Value val, std::string path);
 std::string getItemName(int64_t id);
 std::string getLocationName(int64_t id);
+void parseDataPkg(Json::Value datapkg, bool cache);
 // PRIV Func Declarations End
 
 void AP_Init(const char* ip, const char* game, const char* player_name, const char* passwd) {
@@ -160,11 +165,11 @@ void AP_Init(const char* filename) {
     std::ifstream mwfile(filename);
     reader.parse(mwfile,sp_ap_root);
     mwfile.close();
-    std::ifstream savefile(std::string(filename) + ".save");
+    sp_save_path = std::string(filename) + ".save";
+    std::ifstream savefile(sp_save_path);
     reader.parse(savefile, sp_save_root);
     savefile.close();
-    sp_save_file.open((std::string(filename) + ".save").c_str());
-    WriteSPSave();
+    WriteFileJSON(sp_save_root, sp_save_path);
     ap_player_name = AP_OFFLINE_NAME;
     AP_Init_Generic();
 }
@@ -244,7 +249,7 @@ void AP_SendItem(int64_t idx) {
         std::string req;
         parse_response(writer.write(fake_msg), req);
         sp_save_root["checked_locations"].append(idx);
-        WriteSPSave();
+        WriteFileJSON(sp_save_root, sp_save_path);
         fake_msg.clear();
         fake_msg[0]["cmd"] = "RoomUpdate";
         fake_msg[0]["checked_locations"][0] = idx;
@@ -471,6 +476,9 @@ std::string AP_GetPrivateServerDataPrefix() {
 
 void AP_Init_Generic() {
     ap_player_name_hash = std::hash<std::string>{}(ap_player_name);
+    std::ifstream datapkg_cache_file(datapkg_cache_path);
+    reader.parse(datapkg_cache_file,datapkg_cache);;
+    datapkg_cache_file.close();
 }
 
 bool parse_response(std::string msg, std::string &request) {
@@ -495,12 +503,11 @@ bool parse_response(std::string msg, std::string &request) {
             lib_room_info.permissions = serv_permissions;
             lib_room_info.hint_cost = root[i]["hint_cost"].asInt();
             lib_room_info.location_check_points = root[i]["location_check_points"].asInt();
-            lib_room_info.datapackage_version = root[i]["datapackage_version"].asInt();
-            std::map<std::string,int> serv_datapkg_versions;
-            for (auto itr : root[i]["datapackage_versions"].getMemberNames()) {
-                serv_datapkg_versions[itr] = root[i]["datapackage_versions"][itr].asInt();
+            std::map<std::string,std::string> serv_datapkg_checksums;
+            for (auto itr : root[i]["datapackage_checksums"].getMemberNames()) {
+                serv_datapkg_checksums[itr] = root[i]["datapackage_checksums"][itr].asString();
             }
-            lib_room_info.datapackage_versions = serv_datapkg_versions;
+            lib_room_info.datapackage_checksums = serv_datapkg_checksums;
             lib_room_info.seed_name = root[i]["seed_name"].asString();
             lib_room_info.time = root[i]["time"].asFloat();
 
@@ -524,6 +531,9 @@ bool parse_response(std::string msg, std::string &request) {
         } else if (!strcmp(cmd,"Connected")) {
             // Avoid inconsistency if we disconnected before
             (*resetItemValues)();
+            auth = true;
+            ssl_success = auth && isSSL;
+            refused = false;
 
             printf("AP: Authenticated\n");
             ap_player_id = root[i]["slot"].asInt();
@@ -561,29 +571,46 @@ bool parse_response(std::string msg, std::string &request) {
             resync_serverdata_request.type = AP_DataType::Int;
             AP_GetServerData(&resync_serverdata_request);
 
-            Json::Value req_t;
-            req_t[0]["cmd"] = "GetDataPackage";
+            // Get datapackage for outdated games
+            AP_RoomInfo info;
+            AP_GetRoomInfo(&info);
+            Json::Value req_t = Json::arrayValue;
             if (enable_deathlink && deathlinksupported) {
-                req_t[1]["cmd"] = "ConnectUpdate";
-                req_t[1]["tags"][0] = "DeathLink";
+                Json::Value setdeathlink;
+                setdeathlink["cmd"] = "ConnectUpdate";
+                setdeathlink["tags"][0] = "DeathLink";
+                req_t.append(setdeathlink);
+            }
+            bool cache_outdated = false;
+            Json::Value resync_datapkg;
+            for (std::pair<std::string,std::string> game_pkg : info.datapackage_checksums) {
+                if (datapkg_cache.get("games", Json::objectValue).get(game_pkg.first, Json::objectValue).get("checksum", "_None") != game_pkg.second) {
+                    cache_outdated = true;
+                    printf("AP: Cache outdated for game: %s\n", game_pkg.first.c_str());
+                    resync_datapkg["cmd"] = "GetDataPackage";
+                    resync_datapkg["games"];
+                    if (resync_datapkg["games"].empty()) {
+                        resync_datapkg["games"] = Json::arrayValue;
+                    }
+                    resync_datapkg["games"].append(game_pkg.first);
+                }
+            }
+            if (cache_outdated) {
+                req_t.append(resync_datapkg);
+            } else {
+                parseDataPkg(datapkg_cache, false);
+                Json::Value sync;
+                sync["cmd"] = "Sync";
+                req_t.append(sync);
             }
             request = writer.write(req_t);
             return true;
         } else if (!strcmp(cmd,"DataPackage")) {
-            for (auto itr : root[i]["data"]["games"]) {
-                for (auto itr2 : itr["item_name_to_id"].getMemberNames()) {
-                    map_item_id_name[itr["item_name_to_id"][itr2].asInt64()] = itr2;
-                }
-                for (auto itr2 : itr["location_name_to_id"].getMemberNames()) {
-                    map_location_id_name[itr["location_name_to_id"][itr2].asInt64()] = itr2;
-                }
-            }
+            parseDataPkg(root[i]["data"], true);
+            WriteFileJSON(datapkg_cache, datapkg_cache_path);
             Json::Value req_t;
             req_t[0]["cmd"] = "Sync";
             request = writer.write(req_t);
-            auth = true;
-            ssl_success = auth && isSSL;
-            refused = false;
             return true;
         } else if (!strcmp(cmd,"Retrieved")) {
             for (auto itr : root[i]["keys"].getMemberNames()) {
@@ -762,10 +789,27 @@ void APSend(std::string req) {
     webSocket.send(req);
 }
 
-void WriteSPSave() {
-    sp_save_file.seekp(0);
-    sp_save_file << writer.write(sp_save_root).c_str();
-    sp_save_file.flush();
+void WriteFileJSON(Json::Value val, std::string path) {
+    std::ofstream out;
+    out.open(path);
+    out.seekp(0);
+    out << writer.write(val).c_str();
+    out.flush();
+    out.close();
+}
+
+void parseDataPkg(Json::Value datapkg, bool cache) {
+    for (std::string game : datapkg["games"].getMemberNames()) {
+        Json::Value game_data = datapkg["games"][game];
+        if (cache)
+            datapkg_cache["games"][game] = game_data;
+        for (std::string item_name : game_data["item_name_to_id"].getMemberNames()) {
+            map_item_id_name[game_data["item_name_to_id"][item_name].asInt64()] = item_name;
+        }
+        for (std::string location : game_data["location_name_to_id"].getMemberNames()) {
+            map_location_id_name[game_data["location_name_to_id"][location].asInt64()] = location;
+        }
+    }
 }
 
 std::string getItemName(int64_t id) {

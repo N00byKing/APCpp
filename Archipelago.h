@@ -133,8 +133,7 @@ struct AP_RoomInfo {
     int location_check_points;
     //MISSING: players
     //MISSING: games
-    int datapackage_version;
-    std::map<std::string, int> datapackage_versions;
+    std::map<std::string, std::string> datapackage_checksums;
     std::string seed_name;
     float time;
 };
