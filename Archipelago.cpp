@@ -100,7 +100,8 @@ void APSend(std::string req);
 void WriteFileJSON(Json::Value val, std::string path);
 std::string getItemName(std::string game, int64_t id);
 std::string getLocationName(std::string game, int64_t id);
-void parseDataPkg(Json::Value datapkg, bool cache);
+void parseDataPkg(Json::Value new_datapkg);
+void parseDataPkg();
 AP_NetworkPlayer getPlayer(int team, int slot);
 // PRIV Func Declarations End
 
@@ -615,7 +616,7 @@ bool parse_response(std::string msg, std::string &request) {
             if (cache_outdated) {
                 req_t.append(resync_datapkg);
             } else {
-                parseDataPkg(datapkg_cache, false);
+                parseDataPkg();
                 Json::Value sync;
                 sync["cmd"] = "Sync";
                 req_t.append(sync);
@@ -623,8 +624,7 @@ bool parse_response(std::string msg, std::string &request) {
             request = writer.write(req_t);
             return true;
         } else if (!strcmp(cmd,"DataPackage")) {
-            parseDataPkg(root[i]["data"], true);
-            WriteFileJSON(datapkg_cache, datapkg_cache_path);
+            parseDataPkg(root[i]["data"]);
             Json::Value req_t;
             req_t[0]["cmd"] = "Sync";
             request = writer.write(req_t);
@@ -685,7 +685,7 @@ bool parse_response(std::string msg, std::string &request) {
                 AP_NetworkPlayer recv_player = getPlayer(0, root[i]["receiving"].asInt());
                 AP_ItemSendMessage* msg = new AP_ItemSendMessage;
                 msg->type = AP_MessageType::ItemSend;
-                msg->item = getItemName(getPlayer(0, recv_player.slot).game, root[i]["item"]["item"].asInt64());
+                msg->item = getItemName(getPlayer(recv_player.team, recv_player.slot).game, root[i]["item"]["item"].asInt64());
                 msg->recvPlayer = recv_player.alias;
                 msg->text = msg->item + std::string(" was sent to ") + msg->recvPlayer;
                 messageQueue.push_back(msg);
@@ -815,11 +815,18 @@ void WriteFileJSON(Json::Value val, std::string path) {
     out.close();
 }
 
-void parseDataPkg(Json::Value datapkg, bool cache) {
-    for (std::string game : datapkg["games"].getMemberNames()) {
-        Json::Value game_data = datapkg["games"][game];
-        if (cache)
-            datapkg_cache["games"][game] = game_data;
+void parseDataPkg(Json::Value new_datapkg) {
+    for (std::string game : new_datapkg["games"].getMemberNames()) {
+        Json::Value game_data = new_datapkg["games"][game];
+        datapkg_cache["games"][game] = game_data;
+    }
+    WriteFileJSON(datapkg_cache, datapkg_cache_path);
+    parseDataPkg();
+}
+
+void parseDataPkg() {
+    for (std::string game : datapkg_cache["games"].getMemberNames()) {
+        Json::Value game_data = datapkg_cache["games"][game];
         for (std::string item_name : game_data["item_name_to_id"].getMemberNames()) {
             map_item_id_name[{game,game_data["item_name_to_id"][item_name].asInt64()}] = item_name;
         }
