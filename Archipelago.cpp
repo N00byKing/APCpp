@@ -685,7 +685,7 @@ bool parse_response(std::string msg, std::string &request) {
                 AP_NetworkPlayer recv_player = getPlayer(0, root[i]["receiving"].asInt());
                 AP_ItemSendMessage* msg = new AP_ItemSendMessage;
                 msg->type = AP_MessageType::ItemSend;
-                msg->item = getItemName(getPlayer(recv_player.team, recv_player.slot).game, root[i]["item"]["item"].asInt64());
+                msg->item = getItemName(recv_player.game, root[i]["item"]["item"].asInt64());
                 msg->recvPlayer = recv_player.alias;
                 msg->text = msg->item + std::string(" was sent to ") + msg->recvPlayer;
                 messageQueue.push_back(msg);
