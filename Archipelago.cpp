@@ -406,6 +406,10 @@ int AP_GetUUID() {
     return ap_uuid;
 }
 
+int AP_GetPlayerID() {
+    return ap_player_id;
+}
+
 void AP_SetServerData(AP_SetServerDataRequest* request) {
     request->status = AP_RequestStatus::Pending;
 
