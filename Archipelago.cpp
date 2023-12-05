@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-#define AP_OFFLINE_SLOT 1404
+constexpr int AP_OFFLINE_SLOT = 1404;
 #define AP_OFFLINE_NAME "You"
 
 //Setup Stuff
@@ -194,9 +194,12 @@ void AP_Start() {
             sp_save_root["checked_locations"] = Json::arrayValue;
             sp_save_root["store"] = Json::objectValue;
         }
+        // Only game in the data package is our game
+        ap_game = sp_ap_root["data_package"]["data"]["games"].getMemberNames()[0];
         Json::Value fake_msg;
         fake_msg[0]["cmd"] = "Connected";
         fake_msg[0]["slot"] = AP_OFFLINE_SLOT;
+        fake_msg[0]["slot_info"][std::to_string(AP_OFFLINE_SLOT)]["game"] = ap_game;
         fake_msg[0]["players"] = Json::arrayValue;
         fake_msg[0]["players"][0]["team"] = 0;
         fake_msg[0]["players"][0]["slot"] = AP_OFFLINE_SLOT;
