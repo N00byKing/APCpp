@@ -12,6 +12,7 @@
 #include <json/value.h>
 #include <json/writer.h>
 #include <deque>
+#include <set>
 #include <string>
 #include <chrono>
 #include <functional>
@@ -83,9 +84,10 @@ std::map<std::string, void (*)(std::string)> map_slotdata_callback_raw;
 std::map<std::string, void (*)(std::map<int,int>)> map_slotdata_callback_mapintint;
 std::vector<std::string> slotdata_strings;
 
-// Caching
+// Datapackage Stuff
 std::string const datapkg_cache_path = "APCpp_datapkg.cache";
 Json::Value datapkg_cache;
+std::set<std::string> datapkg_outdated_games;
 
 ix::WebSocket webSocket;
 Json::Reader reader;
@@ -597,7 +599,6 @@ bool parse_response(std::string msg, std::string &request) {
             resync_serverdata_request.type = AP_DataType::Int;
             AP_GetServerData(&resync_serverdata_request);
 
-            // Get datapackage for outdated games
             AP_RoomInfo info;
             AP_GetRoomInfo(&info);
             Json::Value req_t = Json::arrayValue;
@@ -607,21 +608,18 @@ bool parse_response(std::string msg, std::string &request) {
                 setdeathlink["tags"][0] = "DeathLink";
                 req_t.append(setdeathlink);
             }
-            bool cache_outdated = false;
-            Json::Value resync_datapkg;
+            // Get datapackage for outdated games
             for (std::pair<std::string,std::string> game_pkg : info.datapackage_checksums) {
                 if (datapkg_cache.get("games", Json::objectValue).get(game_pkg.first, Json::objectValue).get("checksum", "_None") != game_pkg.second) {
-                    cache_outdated = true;
                     printf("AP: Cache outdated for game: %s\n", game_pkg.first.c_str());
-                    resync_datapkg["cmd"] = "GetDataPackage";
-                    resync_datapkg["games"];
-                    if (resync_datapkg["games"].empty()) {
-                        resync_datapkg["games"] = Json::arrayValue;
-                    }
-                    resync_datapkg["games"].append(game_pkg.first);
+                    datapkg_outdated_games.insert(game_pkg.first);
                 }
             }
-            if (cache_outdated) {
+            if (!datapkg_outdated_games.empty()) {
+                Json::Value resync_datapkg;
+                resync_datapkg["cmd"] = "GetDataPackage";
+                resync_datapkg["games"] = Json::arrayValue;
+                resync_datapkg["games"].append(*datapkg_outdated_games.begin());
                 req_t.append(resync_datapkg);
             } else {
                 parseDataPkg();
@@ -634,7 +632,13 @@ bool parse_response(std::string msg, std::string &request) {
         } else if (!strcmp(cmd,"DataPackage")) {
             parseDataPkg(root[i]["data"]);
             Json::Value req_t;
-            req_t[0]["cmd"] = "Sync";
+            if (!datapkg_outdated_games.empty()) {
+                req_t[0]["cmd"] = "GetDataPackage";
+                req_t[0]["games"] = Json::arrayValue;
+                req_t[0]["games"].append(*datapkg_outdated_games.begin());
+            } else {
+                req_t[0]["cmd"] = "Sync";
+            }
             request = writer.write(req_t);
             return true;
         } else if (!strcmp(cmd,"Retrieved")) {
@@ -827,6 +831,8 @@ void parseDataPkg(Json::Value new_datapkg) {
     for (std::string game : new_datapkg["games"].getMemberNames()) {
         Json::Value game_data = new_datapkg["games"][game];
         datapkg_cache["games"][game] = game_data;
+        datapkg_outdated_games.erase(game);
+        printf("AP: Game Cache updated for %s\n", game.c_str());
     }
     WriteFileJSON(datapkg_cache, datapkg_cache_path);
     parseDataPkg();
