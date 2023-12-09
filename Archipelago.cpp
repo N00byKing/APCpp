@@ -915,3 +915,19 @@ std::string getLocationName(std::string game, int64_t id) {
 AP_NetworkPlayer getPlayer(int team, int slot) {
     return map_players[slot];
 }
+
+AP_NetworkPlayer getPlayer(int team, std::string name) {
+    for (std::pair<int,AP_NetworkPlayer> player : map_players) {
+        if (player.second.name == name && player.second.team == team) {
+            return player.second;
+        }
+    }
+    static AP_NetworkPlayer ERR_Player = {
+        -1,
+        -1,
+        "ERR",
+        "ERR",
+        "ERR"
+    };
+    return ERR_Player;
+}
