@@ -14,11 +14,8 @@
 extern Json::FastWriter writer;
 extern Json::Reader reader;
 extern std::mt19937_64 rando;
-extern int ap_player_id;
 extern int ap_player_team;
 extern std::set<int> teams_set;
-extern std::map<int, std::string> map_player_id_alias;
-extern std::map<std::string, int> map_player_alias_id;
 
 // Stuff that is only used for Gifting
 std::map<std::pair<int,std::string>,AP_GiftBoxProperties> map_players_to_giftbox;
@@ -29,9 +26,11 @@ std::chrono::seconds last_giftbox_sync = std::chrono::duration_cast<std::chrono:
 // PRIV Func Declarations Start
 AP_RequestStatus sendGiftInternal(AP_Gift gift);
 int findGiftByID(std::string id);
+AP_NetworkPlayer getPlayer(int team, int slot);
+AP_NetworkPlayer getPlayer(int team, std::string name);
 // PRIV Func Declarations End
 
-#define AP_PLAYER_GIFTBOX_KEY ("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(ap_player_id))
+#define AP_PLAYER_GIFTBOX_KEY ("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(AP_GetPlayerID()))
 
 AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props) {
     // Create Local Box if needed
@@ -46,20 +45,20 @@ AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props) {
 
     // Set Properties
     Json::Value GlobalGiftBox = Json::objectValue;
-    GlobalGiftBox[std::to_string(ap_player_id)]["IsOpen"] = props.IsOpen;
-    GlobalGiftBox[std::to_string(ap_player_id)]["AcceptsAnyGift"] = props.AcceptsAnyGift;
-    GlobalGiftBox[std::to_string(ap_player_id)]["DesiredTraits"] = Json::arrayValue;
+    GlobalGiftBox[std::to_string(AP_GetPlayerID())]["IsOpen"] = props.IsOpen;
+    GlobalGiftBox[std::to_string(AP_GetPlayerID())]["AcceptsAnyGift"] = props.AcceptsAnyGift;
+    GlobalGiftBox[std::to_string(AP_GetPlayerID())]["DesiredTraits"] = Json::arrayValue;
     for (std::string trait_s : props.DesiredTraits)
-        GlobalGiftBox[std::to_string(ap_player_id)]["DesiredTraits"].append(trait_s);
-    GlobalGiftBox[std::to_string(ap_player_id)]["MinimumGiftDataVersion"] = 2;
-    GlobalGiftBox[std::to_string(ap_player_id)]["MaximumGiftDataVersion"] = 2;
+        GlobalGiftBox[std::to_string(AP_GetPlayerID())]["DesiredTraits"].append(trait_s);
+    GlobalGiftBox[std::to_string(AP_GetPlayerID())]["MinimumGiftDataVersion"] = 2;
+    GlobalGiftBox[std::to_string(AP_GetPlayerID())]["MaximumGiftDataVersion"] = 2;
 
     // Update entry in MotherBox
     AP_SetServerDataRequest req_global_box;
     req_global_box.key = "GiftBoxes;" + std::to_string(ap_player_team);
     std::string GlobalGiftBox_s = writer.write(GlobalGiftBox);
     Json::Value DefBoxGlobal;
-    DefBoxGlobal[std::to_string(ap_player_id)] = Json::objectValue;
+    DefBoxGlobal[std::to_string(AP_GetPlayerID())] = Json::objectValue;
     std::string DefBoxGlobal_s = writer.write(DefBoxGlobal);
     req_global_box.operations = {
         {"default", &DefBoxGlobal_s},
@@ -112,13 +111,14 @@ std::map<std::pair<int,std::string>,AP_GiftBoxProperties> AP_QueryGiftBoxes() {
         for(std::string motherbox_slot : json_data.getMemberNames()) {
             int slot = atoi(motherbox_slot.c_str());
             Json::Value player_global_props = json_data[motherbox_slot];
-            map_players_to_giftbox[{team,map_player_id_alias[slot]}].IsOpen = player_global_props.get("IsOpen",false).asBool();
-            map_players_to_giftbox[{team,map_player_id_alias[slot]}].AcceptsAnyGift = player_global_props.get("AcceptsAnyGift",false).asBool();
+            AP_NetworkPlayer player = getPlayer(team, slot);
+            map_players_to_giftbox[{team,player.name}].IsOpen = player_global_props.get("IsOpen",false).asBool();
+            map_players_to_giftbox[{team,player.name}].AcceptsAnyGift = player_global_props.get("AcceptsAnyGift",false).asBool();
             std::vector<std::string> DesiredTraits;
             for (int i = 0; i < player_global_props["DesiredTraits"].size(); i++) {
                 DesiredTraits.push_back(player_global_props["DesiredTraits"][i].asString());
             }
-            map_players_to_giftbox[{team,map_player_id_alias[slot]}].DesiredTraits = DesiredTraits;
+            map_players_to_giftbox[{team,player.name}].DesiredTraits = DesiredTraits;
         }
     }
     return map_players_to_giftbox;
@@ -133,7 +133,7 @@ AP_RequestStatus AP_SendGift(AP_Gift gift) {
     if (gift.IsRefund) return AP_RequestStatus::Error;
     if (map_players_to_giftbox[{gift.ReceiverTeam, gift.Receiver}].IsOpen == true) {
         gift.SenderTeam = ap_player_team;
-        gift.Sender = map_player_id_alias[ap_player_id];
+        gift.Sender = AP_GetPlayerID();
         return sendGiftInternal(gift);
     }
     return AP_RequestStatus::Error;
@@ -198,17 +198,19 @@ void handleGiftAPISetReply(AP_SetReply reply) {
                 trait.Duration = trait_v.get("Duration", 1.).asDouble();
                 gift.Traits.push_back(trait);
             }
-            gift.Sender = map_player_id_alias[local_giftbox[gift_id]["SenderSlot"].asInt()];
-            gift.Receiver = map_player_id_alias[local_giftbox[gift_id]["ReceiverSlot"].asInt()];
-            gift.SenderTeam = local_giftbox[gift_id].get("SenderTeam", 0).asInt();
-            gift.ReceiverTeam = local_giftbox[gift_id].get("ReceiverTeam", 0).asInt();
+            AP_NetworkPlayer SenderPlayer = getPlayer(local_giftbox[gift_id].get("SenderTeam", 0).asInt(), local_giftbox[gift_id]["SenderSlot"].asInt());
+            AP_NetworkPlayer ReceiverPlayer = getPlayer(local_giftbox[gift_id].get("ReceiverTeam", 0).asInt(), local_giftbox[gift_id]["ReceiverSlot"].asInt());
+            gift.Sender = SenderPlayer.name;
+            gift.Receiver = ReceiverPlayer.name;
+            gift.SenderTeam = SenderPlayer.team;
+            gift.ReceiverTeam = ReceiverPlayer.team;
             gift.IsRefund = local_giftbox[gift_id].get("IsRefund", false).asBool();
             cur_gifts_available.push_back(gift);
         }
         // Perform auto-reject if giftbox closed, or traits do not match
         if (autoReject) {
             std::vector<AP_Gift> gifts = AP_CheckGifts();
-            AP_GiftBoxProperties local_box_props = map_players_to_giftbox[{ap_player_team,map_player_id_alias[ap_player_id]}];
+            AP_GiftBoxProperties local_box_props = map_players_to_giftbox[{ap_player_team,getPlayer(ap_player_team, AP_GetPlayerID()).name}];
             for (AP_Gift gift : gifts) {
                 if (!local_box_props.IsOpen) {
                     AP_RejectGift(gift.ID);
@@ -233,15 +235,17 @@ void handleGiftAPISetReply(AP_SetReply reply) {
 }
 
 AP_RequestStatus sendGiftInternal(AP_Gift gift) {
-    if (gift.IsRefund && gift.Sender == map_player_id_alias[ap_player_id]) {
+    if (gift.IsRefund && gift.Sender == getPlayer(ap_player_team, AP_GetPlayerID()).name) {
         // Loop detected! Rejecting a gift to yourself means you dont want what is in here. Should be safe to return success immediately
         return AP_RequestStatus::Done;
     }
     std::string giftbox_key = "GiftBox;";
+    AP_NetworkPlayer SenderPlayer = getPlayer(gift.SenderTeam, gift.Sender);
+    AP_NetworkPlayer ReceiverPlayer = getPlayer(gift.ReceiverTeam, gift.Receiver);
     if (!gift.IsRefund)
-        giftbox_key += std::to_string(gift.ReceiverTeam) + ";" + std::to_string(map_player_alias_id[gift.Receiver]);
+        giftbox_key += std::to_string(gift.ReceiverTeam) + ";" + std::to_string(ReceiverPlayer.slot);
     else
-        giftbox_key += std::to_string(gift.SenderTeam) + ";" + std::to_string(map_player_alias_id[gift.Sender]);
+        giftbox_key += std::to_string(gift.SenderTeam) + ";" + std::to_string(SenderPlayer.slot);
 
     Json::Value giftVal;
     if (gift.IsRefund) {
@@ -263,8 +267,8 @@ AP_RequestStatus sendGiftInternal(AP_Gift gift) {
         trait_v["Duration"] = trait.Duration;
         giftVal["Traits"].append(trait_v);
     }
-    giftVal["SenderSlot"] = map_player_alias_id[gift.Sender];
-    giftVal["ReceiverSlot"] = map_player_alias_id[gift.Receiver];
+    giftVal["SenderSlot"] = SenderPlayer.slot;
+    giftVal["ReceiverSlot"] = ReceiverPlayer.slot;
     giftVal["SenderTeam"] = gift.SenderTeam;
     giftVal["ReceiverTeam"] = gift.ReceiverTeam;
     giftVal["IsRefund"] = gift.IsRefund;
