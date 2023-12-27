@@ -71,7 +71,8 @@ void AP_SetLocationInfoCallback(void (*f_locrecv)(std::vector<AP_NetworkItem>));
 /* Game Management Functions */
 
 // Sends LocationCheck for given index
-void AP_SendItem(int64_t);
+void AP_SendItem(int64_t location);
+void AP_SendItem(std::vector<int64_t> const& locations);
 
 // Called when Story completed, sends StatusUpdate
 void AP_StoryComplete();
