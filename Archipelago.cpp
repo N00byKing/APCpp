@@ -740,7 +740,7 @@ bool parse_response(std::string msg, std::string &request) {
                 item.player = player.slot;
                 item.flags = root[i]["locations"][j]["flags"].asInt();
                 item.itemName = getItemName(player.game, item.item);
-                item.locationName = getLocationName(player.game, item.location);
+                item.locationName = getLocationName(ap_game, item.location);
                 item.playerName = player.alias;
                 locations.push_back(item);
             }
