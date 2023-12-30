@@ -703,11 +703,12 @@ bool parse_response(std::string msg, std::string &request) {
                 messageQueue.push_back(msg);
             } else if(!strcmp(root[i].get("type","").asCString(),"Hint")) {
                 AP_NetworkPlayer send_player = getPlayer(0, root[i]["item"]["player"].asInt());
+                AP_NetworkPlayer recv_player = getPlayer(0, root[i]["receiving"].asInt());
                 AP_HintMessage* msg = new AP_HintMessage;
                 msg->type = AP_MessageType::Hint;
-                msg->item = getItemName(send_player.game,root[i]["item"]["item"].asInt64());
+                msg->item = getItemName(recv_player.game,root[i]["item"]["item"].asInt64());
                 msg->sendPlayer = send_player.alias;
-                msg->recvPlayer = getPlayer(0, root[i]["receiving"].asInt()).alias;
+                msg->recvPlayer = recv_player.alias;
                 msg->location = getLocationName(send_player.game, root[i]["item"]["location"].asInt64());
                 msg->checked = root[i]["found"].asBool();
                 msg->text = std::string("Item ") + msg->item + std::string(" from ") + msg->sendPlayer + std::string(" to ") + msg->recvPlayer + std::string(" at ") + msg->location + std::string((msg->checked ? " (Checked)" : " (Unchecked)"));
