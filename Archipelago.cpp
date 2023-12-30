@@ -747,7 +747,11 @@ bool parse_response(std::string msg, std::string &request) {
                 item.playerName = player.alias;
                 locations.push_back(item);
             }
-            locinfofunc(locations);
+            if (locinfofunc) {
+                locinfofunc(locations);
+            } else {
+                printf("AP: Received LocationInfo but no handler registered!\n");
+            }
         } else if (cmd == "ReceivedItems") {
             int item_idx = root[i]["index"].asInt();
             bool notify;
