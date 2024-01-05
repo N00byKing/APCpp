@@ -241,14 +241,12 @@ void AP_SetClientVersion(AP_NetworkVersion* version) {
 }
 
 void AP_SendItem(int64_t idx) {
-    AP_SendItem(std::vector<int64_t>{ idx });
+    AP_SendItem(std::set<int64_t>{ idx });
 }
-void AP_SendItem(std::vector<int64_t> const& locations) {
-    printf("AP: ");
+void AP_SendItem(std::set<int64_t> const& locations) {
     for (int64_t idx : locations) {
-        printf("Checked '%s'.", getLocationName(ap_game, idx).c_str());
+        printf("AP: Checked '%s'.", getLocationName(ap_game, idx).c_str());
     }
-    printf("Informing Archipelago...\n", locations.size());
     if (multiworld) {
         Json::Value req_t;
         req_t[0]["cmd"] = "LocationChecks";
@@ -258,14 +256,19 @@ void AP_SendItem(std::vector<int64_t> const& locations) {
         };
         APSend(writer.write(req_t));
     } else {
+        std::vector<int64_t> new_locations(locations.size());
         for (int64_t idx : locations) {
             for (auto itr : sp_save_root["checked_locations"]) {
                 if (itr.asInt64() == idx) {
-                    return;
+                    continue;
                 }
+                new_locations.emplace_back(idx);
             }
+        }
+
+        for (int64_t idx : new_locations) {
             int64_t recv_item_id = sp_ap_root["location_to_item"].get(std::to_string(idx), 0).asInt64();
-            if (recv_item_id == 0) return;
+            if (recv_item_id == 0) continue;;
             Json::Value fake_msg;
             fake_msg[0]["cmd"] = "ReceivedItems";
             fake_msg[0]["index"] = last_item_idx+1;

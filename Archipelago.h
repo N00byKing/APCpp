@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <cstdint>
+#include <set>
 
 void AP_Init(const char*, const char*, const char*, const char*);
 void AP_Init(const char*);
@@ -64,7 +65,7 @@ void AP_RegisterSlotDataMapIntIntCallback(std::string, void (*f_slotdata)(std::m
 void AP_RegisterSlotDataRawCallback(std::string, void (*f_slotdata)(std::string));
 
 // Send LocationScouts packet
-void AP_SendLocationScouts(std::vector<int64_t> const& locations, int create_as_hint);
+void AP_SendLocationScouts(std::set<int64_t> const& locations, int create_as_hint);
 // Receive Function for LocationInfo
 void AP_SetLocationInfoCallback(void (*f_locrecv)(std::vector<AP_NetworkItem>));
 
@@ -72,7 +73,7 @@ void AP_SetLocationInfoCallback(void (*f_locrecv)(std::vector<AP_NetworkItem>));
 
 // Sends LocationCheck for given index
 void AP_SendItem(int64_t location);
-void AP_SendItem(std::vector<int64_t> const& locations);
+void AP_SendItem(std::set<int64_t> const& locations);
 
 // Called when Story completed, sends StatusUpdate
 void AP_StoryComplete();
