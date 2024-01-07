@@ -245,7 +245,7 @@ void AP_SendItem(int64_t idx) {
 }
 void AP_SendItem(std::set<int64_t> const& locations) {
     for (int64_t idx : locations) {
-        printf("AP: Checked '%s'.", getLocationName(ap_game, idx).c_str());
+        printf("AP: Checked '%s'.\n", getLocationName(ap_game, idx).c_str());
     }
     if (multiworld) {
         Json::Value req_t;
@@ -257,7 +257,6 @@ void AP_SendItem(std::set<int64_t> const& locations) {
         APSend(writer.write(req_t));
     } else {
         std::set<int64_t> new_locations;
-
         for (int64_t idx : locations) {
             bool was_previously_checked = false;
             for (auto itr : sp_save_root["checked_locations"]) {
