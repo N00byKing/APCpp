@@ -256,34 +256,44 @@ void AP_SendItem(std::set<int64_t> const& locations) {
         };
         APSend(writer.write(req_t));
     } else {
-        std::vector<int64_t> new_locations(locations.size());
+        std::set<int64_t> new_locations;
+
         for (int64_t idx : locations) {
+            bool was_previously_checked = false;
             for (auto itr : sp_save_root["checked_locations"]) {
                 if (itr.asInt64() == idx) {
-                    continue;
+                    was_previously_checked = true;
+                    break;
                 }
-                new_locations.emplace_back(idx);
             }
+            if (!was_previously_checked) new_locations.insert(idx);
         }
 
+        Json::Value fake_msg;
+        fake_msg[0]["cmd"] = "ReceivedItems";
+        fake_msg[0]["index"] = last_item_idx+1;
+        fake_msg[0]["items"] = Json::arrayValue;
         for (int64_t idx : new_locations) {
             int64_t recv_item_id = sp_ap_root["location_to_item"].get(std::to_string(idx), 0).asInt64();
-            if (recv_item_id == 0) continue;;
-            Json::Value fake_msg;
-            fake_msg[0]["cmd"] = "ReceivedItems";
-            fake_msg[0]["index"] = last_item_idx+1;
-            fake_msg[0]["items"][0]["item"] = recv_item_id;
-            fake_msg[0]["items"][0]["location"] = idx;
-            fake_msg[0]["items"][0]["player"] = ap_player_id;
-            std::string req;
-            parse_response(writer.write(fake_msg), req);
-            sp_save_root["checked_locations"].append(idx);
-            WriteFileJSON(sp_save_root, sp_save_path);
-            fake_msg.clear();
-            fake_msg[0]["cmd"] = "RoomUpdate";
-            fake_msg[0]["checked_locations"][0] = idx;
-            parse_response(writer.write(fake_msg), req);
+            if (recv_item_id == 0) continue;
+            Json::Value item;
+            item["item"] = recv_item_id;
+            item["location"] = idx;
+            item["player"] = ap_player_id;
+            fake_msg[0]["items"].append(item);
         }
+        std::string req;
+        parse_response(writer.write(fake_msg), req);
+
+        fake_msg.clear();
+        fake_msg[0]["cmd"] = "RoomUpdate";
+        fake_msg[0]["checked_locations"] = Json::arrayValue;
+        for (int64_t idx : new_locations) {
+            fake_msg[0]["checked_locations"].append(idx);
+            sp_save_root["checked_locations"].append(idx);
+        }
+        WriteFileJSON(sp_save_root, sp_save_path);
+        parse_response(writer.write(fake_msg), req);
     }
 }
 
