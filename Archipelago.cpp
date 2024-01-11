@@ -388,6 +388,13 @@ void AP_ClearLatestMessage() {
     }
 }
 
+void AP_Say(std::string text) {
+    Json::Value req_t;
+    req_t[0]["cmd"] = "Say";
+    req_t[0]["text"] = text;
+    APSend(writer.write(req_t));
+}
+
 int AP_GetRoomInfo(AP_RoomInfo* client_roominfo) {
     if (!auth) return 1;
     *client_roominfo = lib_room_info;

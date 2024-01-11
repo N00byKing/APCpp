@@ -121,6 +121,8 @@ bool AP_IsMessagePending();
 void AP_ClearLatestMessage();
 AP_Message* AP_GetLatestMessage();
 
+void AP_Say(std::string);
+
 /* Connection Information Types */
 
 enum struct AP_ConnectionStatus {
