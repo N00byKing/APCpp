@@ -242,33 +242,57 @@ void AP_SetClientVersion(AP_NetworkVersion* version) {
 }
 
 void AP_SendItem(int64_t idx) {
-    printf("AP: Checked '%s'. Informing Archipelago...\n", getLocationName(ap_game,idx).c_str());
+    AP_SendItem(std::set<int64_t>{ idx });
+}
+void AP_SendItem(std::set<int64_t> const& locations) {
+    for (int64_t idx : locations) {
+        printf("AP: Checked '%s'.\n", getLocationName(ap_game, idx).c_str());
+    }
     if (multiworld) {
         Json::Value req_t;
         req_t[0]["cmd"] = "LocationChecks";
-        req_t[0]["locations"][0] = idx;
+        req_t[0]["locations"] = Json::arrayValue;
+        for (int64_t loc : locations) {
+            req_t[0]["locations"].append(loc);
+        };
         APSend(writer.write(req_t));
     } else {
-        for (auto itr : sp_save_root["checked_locations"]) {
-            if (itr.asInt64() == idx) {
-                return;
+        std::set<int64_t> new_locations;
+        for (int64_t idx : locations) {
+            bool was_previously_checked = false;
+            for (auto itr : sp_save_root["checked_locations"]) {
+                if (itr.asInt64() == idx) {
+                    was_previously_checked = true;
+                    break;
+                }
             }
+            if (!was_previously_checked) new_locations.insert(idx);
         }
-        int64_t recv_item_id = sp_ap_root["location_to_item"].get(std::to_string(idx), 0).asInt64();
-        if (recv_item_id == 0) return;
+
         Json::Value fake_msg;
         fake_msg[0]["cmd"] = "ReceivedItems";
         fake_msg[0]["index"] = last_item_idx+1;
-        fake_msg[0]["items"][0]["item"] = recv_item_id;
-        fake_msg[0]["items"][0]["location"] = idx;
-        fake_msg[0]["items"][0]["player"] = ap_player_id;
+        fake_msg[0]["items"] = Json::arrayValue;
+        for (int64_t idx : new_locations) {
+            int64_t recv_item_id = sp_ap_root["location_to_item"].get(std::to_string(idx), 0).asInt64();
+            if (recv_item_id == 0) continue;
+            Json::Value item;
+            item["item"] = recv_item_id;
+            item["location"] = idx;
+            item["player"] = ap_player_id;
+            fake_msg[0]["items"].append(item);
+        }
         std::string req;
         parse_response(writer.write(fake_msg), req);
-        sp_save_root["checked_locations"].append(idx);
-        WriteFileJSON(sp_save_root, sp_save_path);
+
         fake_msg.clear();
         fake_msg[0]["cmd"] = "RoomUpdate";
-        fake_msg[0]["checked_locations"][0] = idx;
+        fake_msg[0]["checked_locations"] = Json::arrayValue;
+        for (int64_t idx : new_locations) {
+            fake_msg[0]["checked_locations"].append(idx);
+            sp_save_root["checked_locations"].append(idx);
+        }
+        WriteFileJSON(sp_save_root, sp_save_path);
         parse_response(writer.write(fake_msg), req);
     }
 }
