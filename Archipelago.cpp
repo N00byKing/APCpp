@@ -297,7 +297,7 @@ void AP_SendItem(std::set<int64_t> const& locations) {
     }
 }
 
-void AP_SendLocationScouts(std::vector<int64_t> const& locations, int create_as_hint) {
+void AP_SendLocationScouts(std::set<int64_t> const& locations, int create_as_hint) {
     if (multiworld) {
         Json::Value req_t;
         req_t[0]["cmd"] = "LocationScouts";
