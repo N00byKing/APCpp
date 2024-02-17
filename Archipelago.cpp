@@ -231,6 +231,53 @@ void AP_Start() {
     }
 }
 
+void AP_Shutdown() {
+    webSocket.stop();
+
+    // Reset all states
+    init = false;
+    auth = false;
+    refused = false;
+    multiworld = true;
+    isSSL = true;
+    ssl_success = false;
+    ap_player_id = 0;
+    ap_player_name.clear();
+    ap_ip.clear();
+    ap_game.clear();
+    ap_passwd.clear();
+    ap_uuid = 0;
+    rando = std::mt19937();
+    client_version = {0,2,6};
+    deathlinkstat = false;
+    deathlinksupported = false;
+    enable_deathlink = false;
+    deathlink_amnesty = 0;
+    cur_deathlink_amnesty = 0;
+    while (AP_IsMessagePending()) AP_ClearLatestMessage();
+    queueitemrecvmsg = true;
+    map_players.clear();
+    map_location_id_name.clear();
+    map_item_id_name.clear();
+    resetItemValues = nullptr;
+    getitemfunc = nullptr;
+    checklocfunc = nullptr;
+    locinfofunc = nullptr;
+    recvdeath = nullptr;
+    setreplyfunc = nullptr;
+    map_serverdata_typemanage.clear();
+    int last_item_idx = 0;
+    sp_save_path.clear();
+    sp_save_root.clear();
+    map_server_data.clear(); // Does this leak?
+    map_slotdata_callback_int.clear();
+    map_slotdata_callback_raw.clear();
+    map_slotdata_callback_mapintint.clear();
+    slotdata_strings.clear();
+    datapkg_cache = Json::objectValue;
+    sp_ap_root = Json::objectValue;
+}
+
 bool AP_IsInit() {
     return init;
 }
