@@ -590,11 +590,13 @@ bool parse_response(std::string msg, std::string &request) {
             auth = true;
             ssl_success = auth && isSSL;
             refused = false;
-            AP_SetNotify("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(ap_player_id), AP_DataType::Raw);
 
             printf("AP: Authenticated\n");
             ap_player_team = root[i]["team"].asInt();
             ap_player_id = root[i]["slot"].asInt();
+
+            AP_SetNotify("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(ap_player_id), AP_DataType::Raw);
+            
             for (unsigned int j = 0; j < root[i]["checked_locations"].size(); j++) {
                 //Sync checks with server
                 int64_t loc_id = root[i]["checked_locations"][j].asInt64();
