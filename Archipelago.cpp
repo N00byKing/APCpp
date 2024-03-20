@@ -585,7 +585,17 @@ void AP_SetNotify(std::map<std::string,AP_DataType> keylist, bool requestCurrent
             req_t[i + 1]["cmd"] = "Set";
             req_t[i + 1]["key"] = keytypepair.first;
             req_t[i + 1]["want_reply"] = true;
-            req_t[i + 1]["operations"] = Json::arrayValue;
+            req_t[i + 1]["operations"][0]["operation"] = "default";
+            req_t[i + 1]["operations"][0]["value"] = Json::nullValue;
+            switch (keytypepair.second) {
+                case AP_DataType::Int:
+                case AP_DataType::Double:
+                    req_t[i + 1]["default"] = 0;
+                    break;
+                case AP_DataType::Raw:
+                    req_t[i + 1]["default"] = Json::objectValue;
+                    break;
+            }
         }
 
         i++;
