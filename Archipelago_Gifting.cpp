@@ -85,9 +85,9 @@ std::vector<AP_Gift> AP_CheckGifts() {
 AP_RequestStatus AP_SendGift(AP_Gift gift) {
     if (gift.IsRefund) return AP_RequestStatus::Error;
 
-    std::pair<int,std::string> key = {gift.ReceiverTeam, gift.Receiver};
+    std::pair<int,std::string> giftReceiver = {gift.ReceiverTeam, gift.Receiver};
 
-    if (map_players_to_giftbox.count(key) && map_players_to_giftbox[key].IsOpen == true) {
+    if (map_players_to_giftbox.count(giftReceiver) && map_players_to_giftbox[giftReceiver].IsOpen == true) {
         gift.SenderTeam = ap_player_team;
         gift.Sender = AP_GetPlayerID();
         return sendGiftInternal(gift);
