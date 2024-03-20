@@ -230,9 +230,9 @@ std::string AP_GetPrivateServerDataPrefix();
 void AP_RegisterSetReplyCallback(void (*f_setreply)(AP_SetReply));
 
 // Receive all SetReplys with Keys in parameter list
-void AP_SetNotify(std::map<std::string,AP_DataType>);
+void AP_SetNotify(std::map<std::string,AP_DataType>, bool = false);
 // Single Key version of above for convenience
-void AP_SetNotify(std::string, AP_DataType);
+void AP_SetNotify(std::string, AP_DataType, bool = false);
 
 // Send Bounce package
 void AP_SendBounce(AP_Bounce);
@@ -292,11 +292,13 @@ std::vector<AP_Gift> AP_CheckGifts();
 // IDs and Sender Info are set by the library. The values set will be ignored
 AP_RequestStatus AP_SendGift(AP_Gift gift);
 
-// Accept a gift from the Giftbox, and writes it into a struct in the second parameter. ONLY THIS DATA IS "REAL", DO NOT REUSE DATA FROM AP_CheckGifts()
-AP_RequestStatus AP_AcceptGift(std::string id, AP_Gift* gift);
+// Accept a gift from the Giftbox
+AP_RequestStatus AP_AcceptGift(std::string id);
+AP_RequestStatus AP_AcceptGift(std::set<std::string> ids);
 
 // Reject a gift from the Giftbox, and refund it.
 AP_RequestStatus AP_RejectGift(std::string id);
+AP_RequestStatus AP_RejectGift(std::set<std::string> ids);
 
 // Automatically reject gifts if they are sent while giftbox is closed, or if they do not match a desired trait and AcceptAnyGift was set to false
 // This is mainly a "consistency checker", but could be expensive to use compared to letting the player reject gifts manually, as this will scan all incoming gifts!
