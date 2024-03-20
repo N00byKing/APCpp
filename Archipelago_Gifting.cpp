@@ -14,10 +14,7 @@ extern Json::FastWriter writer;
 extern Json::Reader reader;
 extern std::mt19937_64 rando;
 extern int ap_player_team;
-extern int ap_player_id;
 extern std::set<int> teams_set;
-
-#define AP_PLAYER_GIFTBOX_KEY ("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(ap_player_id))
 
 // Stuff that is only used for Gifting
 std::map<std::pair<int,std::string>,AP_GiftBoxProperties> map_players_to_giftbox;
@@ -29,6 +26,8 @@ AP_RequestStatus sendGiftInternal(AP_Gift gift);
 AP_NetworkPlayer getPlayer(int team, int slot);
 AP_NetworkPlayer getPlayer(int team, std::string name);
 // PRIV Func Declarations End
+
+#define AP_PLAYER_GIFTBOX_KEY ("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(AP_GetPlayerID()))
 
 AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props) {
     // Create Local Box if needed
@@ -111,8 +110,8 @@ AP_RequestStatus AP_AcceptGift(std::set<std::string> ids) {
 
     std::vector<std::string> id_strings;
     for (std::string id : ids) 
-        id_strings.emplace_back("\"" + id + "\"");
-    for (int i=0;i < id_strings.size(); i++)
+        id_strings.push_back("\"" + id + "\"");
+    for (size_t i=0; i < id_strings.size(); i++)
         req.operations.push_back({"pop", &id_strings[i]});
     
     AP_SetServerData(&req);
@@ -213,12 +212,12 @@ void handleGiftAPISetReply(AP_SetReply reply) {
             }
         }
     } else if (reply.key.rfind("GiftBoxes;", 0) == 0) {
-        int team = stoi(reply.key.substr(10)); //10 = length of "GiftBoxes;"
+        int team = std::stoi(reply.key.substr(10)); //10 = length of "GiftBoxes;"
         Json::Value json_data;
         reader.parse(*(std::string*)reply.value, json_data);
         std::set<std::string> foundPlayersNames;
         for(std::string motherbox_slot : json_data.getMemberNames()) {
-            int slot = atoi(motherbox_slot.c_str());
+            int slot = std::stoi(motherbox_slot.c_str());
             Json::Value player_global_props = json_data[motherbox_slot];
             AP_NetworkPlayer player = getPlayer(team, slot);
             foundPlayersNames.insert(player.name);
