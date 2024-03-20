@@ -576,9 +576,6 @@ void AP_SetNotify(std::map<std::string,AP_DataType> keylist, bool requestCurrent
     Json::Value req_t;
     req_t[0]["cmd"] = "SetNotify";
 
-    if (requestCurrentValue)
-        req_t[1]["cmd"] = "Get";
-
     int i = 0;
     for (std::pair<std::string,AP_DataType> keytypepair : keylist) {
         req_t[0]["keys"][i] = keytypepair.first;
