@@ -556,7 +556,8 @@ void AP_CommitServerData() {
     while (!queue_server_data.empty()) {
         std::pair<Json::Value, AP_RequestStatus*> request = queue_server_data.front();
         req.append(request.first);
-        if (req[req.size()-1]["cmd"].asString() == "Set") // Set has local completion at this stage
+        std::string key = req[req.size()-1]["cmd"].asString();
+        if (key == "Set" || key == "SetNotify") // Set has local completion at this stage
             *(request.second) = AP_RequestStatus::Done;
         queue_server_data.pop();
     }
@@ -576,31 +577,46 @@ void AP_SetNotify(std::map<std::string,AP_DataType> keylist, bool requestCurrent
     Json::Value req_t;
     req_t[0]["cmd"] = "SetNotify";
 
+    int zero = 0;
+    std::string emptyJson = "{}";
+
     int i = 0;
+    std::vector<AP_SetServerDataRequest> requests;
+
     for (std::pair<std::string,AP_DataType> keytypepair : keylist) {
         req_t[0]["keys"][i] = keytypepair.first;
         map_serverdata_typemanage[keytypepair.first] = keytypepair.second;
 
-        if (requestCurrentValue){
-            req_t[i + 1]["cmd"] = "Set";
-            req_t[i + 1]["key"] = keytypepair.first;
-            req_t[i + 1]["want_reply"] = true;
-            req_t[i + 1]["operations"][0]["operation"] = "default";
-            req_t[i + 1]["operations"][0]["value"] = Json::nullValue;
+        i++;
+
+        if (requestCurrentValue) {
+            AP_SetServerDataRequest setDefaultRequest;
+            setDefaultRequest.key = keytypepair.first;
+            setDefaultRequest.type = keytypepair.second;
+            setDefaultRequest.want_reply = true;
+            setDefaultRequest.operations = {{"default", &zero}};
+
             switch (keytypepair.second) {
                 case AP_DataType::Int:
                 case AP_DataType::Double:
-                    req_t[i + 1]["default"] = 0;
+                    setDefaultRequest.default_value = &zero;
                     break;
                 case AP_DataType::Raw:
-                    req_t[i + 1]["default"] = Json::objectValue;
+                    setDefaultRequest.default_value = &emptyJson;
                     break;
             }
+            
+            requests.push_back(setDefaultRequest);
         }
-
-        i++;
     }
-    APSend(writer.write(req_t));
+
+    AP_RequestStatus requestStatus;
+    queue_server_data.push({req_t, &requestStatus});
+
+    for (AP_SetServerDataRequest& request : requests)
+        AP_BulkSetServerData(&request);
+
+    AP_CommitServerData();
 }
 
 void AP_SetNotify(std::string key, AP_DataType type, bool requestCurrentValue) {
