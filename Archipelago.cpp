@@ -575,7 +575,7 @@ void AP_RegisterSetReplyCallback(void (*f_setreply)(AP_SetReply)) {
 
 void AP_SetNotify(std::map<std::string,AP_DataType> keylist, bool requestCurrentValue) {
     Json::Value req_t;
-    req_t[0]["cmd"] = "SetNotify";
+    req_t["cmd"] = "SetNotify";
 
     int zero = 0;
     std::string emptyJson = "{}";
@@ -584,7 +584,7 @@ void AP_SetNotify(std::map<std::string,AP_DataType> keylist, bool requestCurrent
     std::vector<AP_SetServerDataRequest> requests;
 
     for (std::pair<std::string,AP_DataType> keytypepair : keylist) {
-        req_t[0]["keys"][i] = keytypepair.first;
+        req_t["keys"][i] = keytypepair.first;
         map_serverdata_typemanage[keytypepair.first] = keytypepair.second;
 
         i++;
@@ -594,14 +594,14 @@ void AP_SetNotify(std::map<std::string,AP_DataType> keylist, bool requestCurrent
             setDefaultRequest.key = keytypepair.first;
             setDefaultRequest.type = keytypepair.second;
             setDefaultRequest.want_reply = true;
-            setDefaultRequest.operations = {{"default", &zero}};
-
             switch (keytypepair.second) {
                 case AP_DataType::Int:
                 case AP_DataType::Double:
+                    setDefaultRequest.operations = {{"default", &zero}};
                     setDefaultRequest.default_value = &zero;
                     break;
                 case AP_DataType::Raw:
+                    setDefaultRequest.operations = {{"default", &emptyJson}};
                     setDefaultRequest.default_value = &emptyJson;
                     break;
             }
