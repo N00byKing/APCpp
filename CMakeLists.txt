@@ -10,6 +10,7 @@ add_library(APCpp SHARED Archipelago.cpp Archipelago.h)
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
 
 # Enable TLS. On Windows, build mbedTLS
 set(USE_TLS ON CACHE BOOL "Enable TLS support" FORCE)
