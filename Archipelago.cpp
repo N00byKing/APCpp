@@ -582,13 +582,13 @@ bool parse_response(std::string msg, std::string &request) {
             }
         } else if (cmd == "Connected") {
             // Avoid inconsistency if we disconnected before
+            printf("AP: Authenticated\n");
+            ap_player_id = root[i]["slot"].asInt(); // MUST be called before resetitemvalues, otherwise PrivateServerDataPrefix, GetPlayerID return broken values!
             (*resetItemValues)();
             auth = true;
             ssl_success = auth && isSSL;
             refused = false;
 
-            printf("AP: Authenticated\n");
-            ap_player_id = root[i]["slot"].asInt();
             for (unsigned int j = 0; j < root[i]["checked_locations"].size(); j++) {
                 //Sync checks with server
                 int64_t loc_id = root[i]["checked_locations"][j].asInt64();
