@@ -57,7 +57,7 @@ void AP_SetLocationCheckedCallback(void (*f_locrecv)(int64_t));
 /* Optional Callback Functions */
 
 //Parameter Function will be called when Death Link is received. Alternative to Pending/Clear usage
-void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)());
+void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)(std::string,std::string));
 
 // Parameter Function receives Slotdata of respective type
 void AP_RegisterSlotDataIntCallback(std::string, void (*f_slotdata)(int));
