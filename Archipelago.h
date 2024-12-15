@@ -11,6 +11,8 @@ void AP_Init(const char*);
 bool AP_IsInit();
 
 void AP_Start();
+
+// AP_Shutdown resets the library state to before initialization, and doesn't just disconnect!
 void AP_Shutdown();
 
 struct AP_NetworkVersion {

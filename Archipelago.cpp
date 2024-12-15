@@ -232,7 +232,8 @@ void AP_Start() {
 }
 
 void AP_Shutdown() {
-    webSocket.stop();
+    if (multiworld)
+        webSocket.stop();
 
     // Reset all states
     init = false;
@@ -247,7 +248,6 @@ void AP_Shutdown() {
     ap_game.clear();
     ap_passwd.clear();
     ap_uuid = 0;
-    rando = std::mt19937();
     client_version = {0,2,6};
     deathlinkstat = false;
     deathlinksupported = false;
@@ -266,7 +266,7 @@ void AP_Shutdown() {
     recvdeath = nullptr;
     setreplyfunc = nullptr;
     map_serverdata_typemanage.clear();
-    int last_item_idx = 0;
+    last_item_idx = 0;
     sp_save_path.clear();
     sp_save_root.clear();
     map_server_data.clear(); // Does this leak?
