@@ -38,7 +38,7 @@ std::string ap_game;
 std::string ap_passwd;
 std::uint64_t ap_uuid = 0;
 std::mt19937 rando;
-AP_NetworkVersion client_version = {0,2,6}; // Default for compatibility reasons
+AP_NetworkVersion client_version = {0,5,1}; // Default for compatibility reasons
 
 //Deathlink Stuff
 bool deathlinkstat = false;
