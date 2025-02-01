@@ -22,7 +22,7 @@
 
 constexpr int AP_OFFLINE_SLOT = 1404;
 constexpr char const* AP_OFFLINE_NAME = "You";
-constexpr AP_DEFAULT_NETWORK_VERSION = {0,5,1}; // Default for compatibility reasons
+constexpr AP_NetworkVersion AP_DEFAULT_NETWORK_VERSION = {0,5,1}; // Default for compatibility reasons
 
 //Setup Stuff
 bool init = false;
