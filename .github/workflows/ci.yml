@@ -30,7 +30,7 @@ jobs:
         copy build/Release/APCpp.dll artifact
         copy build/Release/APCpp.lib artifact
     - name: Create Build Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: APCpp-win
         path: |
