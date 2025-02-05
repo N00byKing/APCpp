@@ -79,6 +79,7 @@ size_t last_item_idx = 0;
 
 // Gifting interop
 bool gifting_supported = false;
+bool gifting_autoReject = true;
 void handleGiftAPISetReply(AP_SetReply reply);
 
 // Singleplayer Seed Info
@@ -268,6 +269,8 @@ void AP_Shutdown() {
     enable_deathlink = false;
     deathlink_amnesty = 0;
     cur_deathlink_amnesty = 0;
+    gifting_autoReject = true;
+    gifting_supported = false;
     while (AP_IsMessagePending()) AP_ClearLatestMessage();
     queueitemrecvmsg = true;
     map_players.clear();
@@ -460,10 +463,6 @@ bool AP_DeathLinkPending() {
 
 void AP_DeathLinkClear() {
     deathlinkstat = false;
-}
-
-void AP_SetGiftingSupported(bool enabled){
-    gifting_supported = enabled;
 }
 
 bool AP_IsMessagePending() {
