@@ -1024,7 +1024,7 @@ bool parse_response(std::string msg, std::string &request) {
                 // Add targets to bounce package
                 #define ADD_TARGETS( targets ) \
                         if (root[i].isMember(#targets)) { \
-                            for (int j = 0; j < root[i][#targets].size(); j++) { \
+                            for (unsigned int j = 0; j < root[i][#targets].size(); j++) { \
                                 targets.push_back(root[i][#targets][j].asString()); \
                             } \
                             bounce.targets = &targets; \

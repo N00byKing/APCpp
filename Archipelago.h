@@ -230,8 +230,10 @@ std::string AP_GetPrivateServerDataPrefix();
 void AP_RegisterSetReplyCallback(void (*f_setreply)(AP_SetReply));
 
 // Receive all SetReplys with Keys in parameter list
+// AP_SetNotify will call AP_CommitServerData() and thus complete all pending serverdata requests
 void AP_SetNotify(std::map<std::string,AP_DataType>, bool = false);
 // Single Key version of above for convenience
+// AP_SetNotify will call AP_CommitServerData() and thus complete all pending serverdata requests
 void AP_SetNotify(std::string, AP_DataType, bool = false);
 
 // Send Bounce package
