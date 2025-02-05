@@ -306,3 +306,6 @@ AP_RequestStatus AP_RejectGift(std::set<std::string> ids);
 // This is mainly a "consistency checker", but could be expensive to use compared to letting the player reject gifts manually, as this will scan all incoming gifts!
 // It is enabled by default, but performance impact may mean that it needs to be disabled depending on game and server environment (such as clients that automatically send gifts, unaware that the giftbox is closed)
 void AP_UseGiftAutoReject(bool enable);
+
+// Enabled the gifting api functions, should be configured before AP_Start get called, defaults to off
+void AP_SetGiftingSupported(bool);

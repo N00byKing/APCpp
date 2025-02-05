@@ -16,6 +16,7 @@ extern Json::Reader reader;
 extern std::mt19937_64 rando;
 extern int ap_player_team;
 extern std::set<int> teams_set;
+extern bool gifting_supported;
 
 // Stuff that is only used for Gifting
 std::map<std::pair<int,std::string>,AP_GiftBoxProperties> map_players_to_giftbox;
@@ -37,6 +38,11 @@ bool hasOpenGiftBox(int team, std::string player);
 #define CURRENT_GIFT_PROTOCOL_VERSION 3
 
 AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props) {
+    if (!gifting_supported){
+        printf("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
+        return AP_RequestStatus::Error;
+    }
+
     // Create Local Box if needed
     AP_SetServerDataRequest req_local_box;
     req_local_box.key = AP_PLAYER_GIFTBOX_KEY;
@@ -92,6 +98,11 @@ std::vector<AP_Gift> AP_CheckGifts() {
 }
 
 AP_RequestStatus AP_SendGift(AP_Gift gift) {
+    if (!gifting_supported){
+        printf("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
+        return AP_RequestStatus::Error;
+    }
+
     if (gift.IsRefund) return AP_RequestStatus::Error;
 
     std::pair<int,std::string> giftReceiver = {gift.ReceiverTeam, gift.Receiver};
@@ -109,6 +120,11 @@ AP_RequestStatus AP_AcceptGift(std::string id) {
     return AP_AcceptGift(std::set<std::string>{ id });
 }
 AP_RequestStatus AP_AcceptGift(std::set<std::string> ids) {
+    if (!gifting_supported){
+        printf("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
+        return AP_RequestStatus::Error;
+    }
+
    if (ids.size() == 0)
         return AP_RequestStatus::Done;
 
@@ -133,6 +149,11 @@ AP_RequestStatus AP_RejectGift(std::string id) {
     return AP_RejectGift(std::set<std::string>{ id });
 }
 AP_RequestStatus AP_RejectGift(std::set<std::string> ids) {
+    if (!gifting_supported){
+        printf("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
+        return AP_RequestStatus::Error;
+    }
+
     std::set<AP_Gift*> gifts;
     std::set<std::string> giftIds;
     std::vector<AP_Gift> availableGiftsCopy = AP_CheckGifts();
@@ -172,9 +193,19 @@ void AP_UseGiftAutoReject(bool enable) {
     autoReject = enable;
 }
 
+// PRIV
 AP_GiftBoxProperties getLocalGiftBoxProperties(){
+    std::pair<int,std::string> localGiftbox = {ap_player_team,getPlayer(ap_player_team, AP_GetPlayerID()).name};
+
     std::scoped_lock lock(map_players_to_giftbox_mutex);
-    return map_players_to_giftbox[{ap_player_team,getPlayer(ap_player_team, AP_GetPlayerID()).name}];
+
+    if (map_players_to_giftbox.count(localGiftbox) > 0)
+        return map_players_to_giftbox[localGiftbox];
+
+    AP_GiftBoxProperties uninitialized;
+    uninitialized.IsOpen = false;
+    uninitialized.AcceptsAnyGift = false;
+    return uninitialized;
 }
 
 bool hasOpenGiftBox(int team, std::string player){
@@ -185,7 +216,6 @@ bool hasOpenGiftBox(int team, std::string player){
         && map_players_to_giftbox[giftTarget].IsOpen == true;
 }
 
-// PRIV
 void handleGiftAPISetReply(AP_SetReply reply) {
     if (reply.key == AP_PLAYER_GIFTBOX_KEY) {
         std::scoped_lock lock(cur_gifts_available_mutex);

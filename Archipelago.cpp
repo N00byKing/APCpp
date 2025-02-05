@@ -78,6 +78,7 @@ AP_GetServerDataRequest resync_serverdata_request;
 size_t last_item_idx = 0;
 
 // Gifting interop
+bool gifting_supported = false;
 void handleGiftAPISetReply(AP_SetReply reply);
 
 // Singleplayer Seed Info
@@ -461,6 +462,10 @@ void AP_DeathLinkClear() {
     deathlinkstat = false;
 }
 
+void AP_SetGiftingSupported(bool enabled){
+    gifting_supported = enabled;
+}
+
 bool AP_IsMessagePending() {
     return !messageQueue.empty();
 }
@@ -755,12 +760,14 @@ bool parse_response(std::string msg, std::string &request) {
                 teams_set.insert(root[i]["players"][j]["team"].asInt());
             }
 
-            // Order is important, Motherboxes must be retrieved before personal box for auto-rejection reasons
-            std::map<std::string,AP_DataType> giftMotherBoxKeys;
-            for (int team : teams_set)
-                giftMotherBoxKeys.emplace("GiftBoxes;" + std::to_string(team), AP_DataType::Raw); 
-            AP_SetNotify(giftMotherBoxKeys, true);
-            AP_SetNotify("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(ap_player_id), AP_DataType::Raw, true);
+            if (gifting_supported) {
+                // Order is important, Motherboxes must be retrieved before personal box for auto-rejection reasons, do not combine
+                std::map<std::string,AP_DataType> giftMotherBoxKeys;
+                for (int team : teams_set)
+                    giftMotherBoxKeys.emplace("GiftBoxes;" + std::to_string(team), AP_DataType::Raw); 
+                AP_SetNotify(giftMotherBoxKeys, true);
+                AP_SetNotify("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(ap_player_id), AP_DataType::Raw, true);
+            }
 
             if ((root[i]["slot_data"].get("death_link", false).asBool() || root[i]["slot_data"].get("DeathLink", false).asBool()) && deathlinksupported) enable_deathlink = true;
             if (root[i]["slot_data"]["death_link_amnesty"] != Json::nullValue)
@@ -853,7 +860,7 @@ bool parse_response(std::string msg, std::string &request) {
                 map_server_data.erase(itr);
             }
         } else if (cmd == "SetReply") {
-            if (root[i]["key"].asString().rfind("GiftBox", 0) == 0) {
+            if (gifting_supported && root[i]["key"].asString().rfind("GiftBox", 0) == 0) {
                 // Reserved by library. Used for Gifting API
                 std::string raw_val;
                 std::string raw_orig_val;
