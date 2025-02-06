@@ -47,7 +47,8 @@ AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props) {
     req_local_box.key = AP_PLAYER_GIFTBOX_KEY;
     std::string LocalGiftBoxDef_s = writer.write(Json::objectValue);
     req_local_box.default_value = &LocalGiftBoxDef_s;
-    req_local_box.operations = {{"default", &LocalGiftBoxDef_s}};
+    int zero = 0;
+    req_local_box.operations = {{"default", &zero}};
     req_local_box.type = AP_DataType::Raw;
     req_local_box.want_reply = true;
     AP_BulkSetServerData(&req_local_box);
@@ -69,9 +70,7 @@ AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props) {
     Json::Value DefBoxGlobal;
     DefBoxGlobal[std::to_string(AP_GetPlayerID())] = Json::objectValue;
     std::string DefBoxGlobal_s = writer.write(DefBoxGlobal);
-    req_global_box.operations = {
-        {"default", &DefBoxGlobal_s},
-        {"update", &GlobalGiftBox_s}};
+    req_global_box.operations = {{"update", &GlobalGiftBox_s}};
     req_global_box.default_value = &DefBoxGlobal_s;
     req_global_box.type = AP_DataType::Raw;
     req_global_box.want_reply = false;
@@ -230,7 +229,7 @@ void handleGiftAPISetReply(AP_SetReply reply) {
             gift.ID = gift_id;
             gift.ItemName = local_giftbox[gift_id].get("item_name", "Unknown").asString();
             gift.Amount = local_giftbox[gift_id].get("amount", 0).asUInt();
-            gift.ItemValue = local_giftbox[gift_id].get("item_value", 0).asUInt();
+            gift.ItemValue = local_giftbox[gift_id].get("item_value", 0).asUInt64(); //technically this value is unbounded so even uint64 isnt enough
             for (Json::Value trait_v : local_giftbox[gift_id]["traits"]) {
                 AP_GiftTrait trait;
                 trait.Trait = trait_v.get("trait", "Unknown").asString();
@@ -334,12 +333,13 @@ AP_RequestStatus sendGiftInternal(AP_Gift gift) {
     }
     giftVal["item_name"] = gift.ItemName;
     giftVal["amount"] = gift.Amount;
-    giftVal["item_value"] = gift.ItemValue;
+    if (gift.ItemValue > 0) giftVal["item_value"] = gift.ItemValue;
+    giftVal["traits"] = Json::arrayValue;
     for (const AP_GiftTrait& trait : gift.Traits) {
         Json::Value trait_v;
         trait_v["trait"] = trait.Trait;
-        trait_v["quality"] = trait.Quality;
-        trait_v["duration"] = trait.Duration;
+        if (trait.Quality != 1.) trait_v["quality"] = trait.Quality;
+        if (trait.Duration != 1.) trait_v["duration"] = trait.Duration;
         giftVal["traits"].append(trait_v);
     }
     giftVal["sender_slot"] = SenderPlayer.slot;
@@ -360,7 +360,6 @@ AP_RequestStatus sendGiftInternal(AP_Gift gift) {
     req.default_value = &defVal_s;
 
     req.operations = {
-        {"default", &defVal_s},
         {"update", &gift_s}
     };
 
