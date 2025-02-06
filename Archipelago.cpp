@@ -80,7 +80,7 @@ size_t last_item_idx = 0;
 // Gifting interop
 bool gifting_supported = false;
 bool gifting_autoReject = true;
-void handleGiftAPISetReply(AP_SetReply reply);
+void handleGiftAPISetReply(const AP_SetReply& reply);
 
 // Singleplayer Seed Info
 std::string sp_save_path;
