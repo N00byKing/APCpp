@@ -581,7 +581,7 @@ void AP_SetNotify(std::map<std::string,AP_DataType> keylist, bool requestCurrent
     Json::Value req_t;
     req_t["cmd"] = "SetNotify";
 
-    int zero = 0;
+    std::string zero = "0";
     std::string emptyJson = "{}";
 
     int i = 0;

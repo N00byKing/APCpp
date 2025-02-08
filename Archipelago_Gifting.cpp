@@ -37,7 +37,7 @@ bool hasOpenGiftBox(int team, std::string player);
 #define AP_PLAYER_GIFTBOX_KEY ("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(AP_GetPlayerID()))
 #define CURRENT_GIFT_PROTOCOL_VERSION 3
 
-AP_RequestStatus AP_SetGiftBoxProperties(const AP_GiftBoxProperties& props) {
+AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props) {
     if (!gifting_supported){
         printf("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
         return AP_RequestStatus::Error;
@@ -48,7 +48,7 @@ AP_RequestStatus AP_SetGiftBoxProperties(const AP_GiftBoxProperties& props) {
     req_local_box.key = AP_PLAYER_GIFTBOX_KEY;
     std::string LocalGiftBoxDef_s = writer.write(Json::objectValue);
     req_local_box.default_value = &LocalGiftBoxDef_s;
-    int zero = 0;
+    std::string zero = "0";
     req_local_box.operations = {{"default", &zero}};
     req_local_box.type = AP_DataType::Raw;
     req_local_box.want_reply = true;
@@ -68,9 +68,7 @@ AP_RequestStatus AP_SetGiftBoxProperties(const AP_GiftBoxProperties& props) {
     AP_SetServerDataRequest req_global_box;
     req_global_box.key = "GiftBoxes;" + std::to_string(ap_player_team);
     std::string GlobalGiftBox_s = writer.write(GlobalGiftBox);
-    Json::Value DefBoxGlobal;
-    DefBoxGlobal[std::to_string(AP_GetPlayerID())] = Json::objectValue;
-    std::string DefBoxGlobal_s = writer.write(DefBoxGlobal);
+    std::string DefBoxGlobal_s = "{}";
     req_global_box.operations = {{"update", &GlobalGiftBox_s}};
     req_global_box.default_value = &DefBoxGlobal_s;
     req_global_box.type = AP_DataType::Raw;
@@ -108,7 +106,7 @@ AP_RequestStatus AP_SendGift(AP_Gift gift) {
 
     if (hasOpenGiftBox(gift.ReceiverTeam, gift.Receiver)) {
         gift.SenderTeam = ap_player_team;
-        gift.Sender = AP_GetPlayerID();
+        gift.Sender = getPlayer(ap_player_team, AP_GetPlayerID()).name;
         return sendGiftInternal(gift);
     }
 
