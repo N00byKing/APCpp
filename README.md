@@ -34,8 +34,15 @@ Finally, call `AP_Start()`
 
 ## Operation during runtime
 
-When the player completes a check, call `AP_SendItem(int)` with the Item ID as the parameter.
+When the player completes a check, call `AP_SendItem(int)` with the Location ID as the parameter.
 When the player completes the game, call `AP_StoryComplete`.
+
+### Messages
+Messages can be received from the Archipelago Server and this Library, such as Messages describing which item was sent, who was responsible for a Death received with DeathLink, etc.
+To receive messages:
+- Check if message is available using `AP_IsMessagePending()`
+- Receive with `AP_GetLatestMessage()`. This returns an AP_Message struct with a type and preconfigured presentable text for this message. If you want the game client to have more details for the message (for example to create a custom text) any non-plaintext type message can be casted to an AP_`TYPE`Message with some type-specific struct members providing additional information for the given message.
+- Clear the latest message with `AP_ClearLatestMessage()`.
 
 ### DeathLink
 If DeathLink is supported, you have multiple ways of using it:
@@ -49,14 +56,6 @@ If Gifting is supported, you can interact with it using the following methods:
 - Regularly call `std::vector<AP_Gift> AP_CheckGifts();` to see what gifts are send to you.
 - Then call `AP_RequestStatus AP_AcceptGift(std::string id);` or `AP_RequestStatus AP_RejectGift(std::string id);` to either accept or reject the gift, if the gift is accepted you award it to your player, if its rejected will be send back to the sender.
 - When you want to send a gift, call `std::map<std::pair<int,std::string>,AP_GiftBoxProperties> AP_QueryGiftBoxes();` to find out what type of gifts other players desire, and then call `AP_RequestStatus AP_SendGift(AP_Gift gift);` to send a gift to who you have chosen.
-
-
-### Messages
-Messages can be received from the Archipelago Server and this Library, such as Messages describing which item was sent, who was responsible for a Death received with DeathLink, etc.
-To receive messages:
-- Check if message is available using `AP_IsMessagePending()`
-- Receive with `AP_GetLatestMessage()`. This returns an AP_Message struct with a type and preconfigured presentable text for this message. If you want the game client to have more details for the message (for example to create a custom text) any non-plaintext type message can be casted to an AP_`TYPE`Message with some type-specific struct members providing additional information for the given message.
-- Clear the latest message with `AP_ClearLatestMessage()`.
 
 # Building
 Clone the Repo recursively!
