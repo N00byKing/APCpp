@@ -788,7 +788,6 @@ bool parse_response(std::string msg, std::string &request) {
                 }
             }
 
-            AP_GetServerDataRequest resync_serverdata_request;
             resync_serverdata_request.key = "APCppLastRecv" + ap_player_name + std::to_string(ap_player_id);
             resync_serverdata_request.value = &last_item_idx;
             resync_serverdata_request.type = AP_DataType::Int;
