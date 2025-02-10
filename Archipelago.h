@@ -156,7 +156,7 @@ struct AP_RoomInfo {
 
 int AP_GetRoomInfo(AP_RoomInfo*);
 AP_ConnectionStatus AP_GetConnectionStatus();
-int AP_GetUUID();
+std::uint64_t AP_GetUUID();
 int AP_GetPlayerID();
 
 /* Serverside Data Types */
