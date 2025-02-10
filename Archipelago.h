@@ -282,9 +282,7 @@ AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props);
 
 // Returns information on all Gift Boxes on the server as a map of <Team,PlayerName> -> GiftBoxProperties.
 // This data is cached by the library, and attempting to send to someone who has no or a closed giftbox the last time this function was called will always fail
-// Additionally, this cache will be refreshed after the client attempts to send a gift (whether refund or new) 5 minutes after the last time the Gift Box information was pulled
-// This tries to minimize the amount of erroneous gifts sent, should someone close their giftbox / change their DesiredTraits.
-// Thus, should sending a gift fail, it might be that your Gift Box info is outdated. Refresh using this function.
+// This data is automatically kept in sync with the AP server
 std::map<std::pair<int,std::string>,AP_GiftBoxProperties> AP_QueryGiftBoxes();
 
 // Get currently available Gifts in own gift box
