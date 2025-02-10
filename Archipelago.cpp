@@ -22,8 +22,8 @@
 #include <vector>
 
 constexpr int AP_OFFLINE_SLOT = 1404;
-constexpr char const* AP_OFFLINE_NAME = "You";
 constexpr int AP_OFFLINE_TEAM = 0;
+constexpr char const* AP_OFFLINE_NAME = "You";
 constexpr AP_NetworkVersion AP_DEFAULT_NETWORK_VERSION = {0,5,1}; // Default for compatibility reasons
 
 //Setup Stuff
@@ -78,7 +78,9 @@ AP_GetServerDataRequest resync_serverdata_request;
 uint64_t last_item_idx = 0;
 
 // Gifting interop
-void handleGiftAPISetReply(AP_SetReply reply);
+bool gifting_supported = false;
+bool gifting_autoReject = true;
+void handleGiftAPISetReply(const AP_SetReply& reply);
 
 // Singleplayer Seed Info
 std::string sp_save_path;
@@ -268,6 +270,8 @@ void AP_Shutdown() {
     enable_deathlink = false;
     deathlink_amnesty = 0;
     cur_deathlink_amnesty = 0;
+    gifting_autoReject = true;
+    gifting_supported = false;
     while (AP_IsMessagePending()) AP_ClearLatestMessage();
     queueitemrecvmsg = true;
     map_players.clear();
@@ -560,7 +564,8 @@ void AP_CommitServerData() {
     while (!queue_server_data.empty()) {
         std::pair<Json::Value, AP_RequestStatus*> request = queue_server_data.front();
         req.append(request.first);
-        if (req[req.size()-1]["cmd"].asString() == "Set") // Set has local completion at this stage
+        std::string key = req[req.size()-1]["cmd"].asString();
+        if (key == "Set" || key == "SetNotify") // Set has local completion at this stage
             *(request.second) = AP_RequestStatus::Done;
         queue_server_data.pop();
     }
@@ -576,22 +581,56 @@ void AP_RegisterSetReplyCallback(std::function<void(AP_SetReply)> f_setreply) {
     setreplyfunc = f_setreply;
 }
 
-void AP_SetNotify(std::map<std::string,AP_DataType> keylist) {
+void AP_SetNotify(std::map<std::string,AP_DataType> keylist, bool requestCurrentValue) {
     Json::Value req_t;
-    req_t[0]["cmd"] = "SetNotify";
+    req_t["cmd"] = "SetNotify";
+
+    std::string zero = "0";
+    std::string emptyJson = "{}";
+
     int i = 0;
+    std::vector<AP_SetServerDataRequest> requests;
+
     for (std::pair<std::string,AP_DataType> keytypepair : keylist) {
-        req_t[0]["keys"][i] = keytypepair.first;
+        req_t["keys"][i] = keytypepair.first;
         map_serverdata_typemanage[keytypepair.first] = keytypepair.second;
+
         i++;
+
+        if (requestCurrentValue) {
+            AP_SetServerDataRequest setDefaultRequest;
+            setDefaultRequest.key = keytypepair.first;
+            setDefaultRequest.type = keytypepair.second;
+            setDefaultRequest.want_reply = true;
+            switch (keytypepair.second) {
+                case AP_DataType::Int:
+                case AP_DataType::Double:
+                    setDefaultRequest.operations = {{"default", &zero}};
+                    setDefaultRequest.default_value = &zero;
+                    break;
+                case AP_DataType::Raw:
+                    setDefaultRequest.operations = {{"default", &zero}};
+                    setDefaultRequest.default_value = &emptyJson;
+                    break;
+            }
+            
+            requests.push_back(setDefaultRequest);
+        }
     }
-    APSend(writer.write(req_t));
+
+    AP_RequestStatus requestStatus;
+    queue_server_data.push({req_t, &requestStatus});
+
+    for (AP_SetServerDataRequest& request : requests)
+        AP_BulkSetServerData(&request);
+
+    AP_CommitServerData();
 }
 
-void AP_SetNotify(std::string key, AP_DataType type) {
+void AP_SetNotify(std::string key, AP_DataType type, bool requestCurrentValue) {
     std::map<std::string,AP_DataType> keylist;
     keylist[key] = type;
-    AP_SetNotify(keylist);
+    AP_SetNotify(keylist, requestCurrentValue);
 }
 
 void AP_BulkGetServerData(AP_GetServerDataRequest* request) {
@@ -706,8 +745,6 @@ bool parse_response(std::string msg, std::string &request) {
             ap_player_team = root[i]["team"].asInt();
             resetItemValues();
 
-            AP_SetNotify("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(ap_player_id), AP_DataType::Raw);
-
             for (unsigned int j = 0; j < root[i]["checked_locations"].size(); j++) {
                 //Sync checks with server
                 int64_t loc_id = root[i]["checked_locations"][j].asInt64();
@@ -725,6 +762,16 @@ bool parse_response(std::string msg, std::string &request) {
                 map_players[root[i]["players"][j]["slot"].asInt()] = player;
                 teams_set.insert(root[i]["players"][j]["team"].asInt());
             }
+
+            if (gifting_supported) {
+                // Order is important, Motherboxes must be retrieved before personal box for auto-rejection reasons, do not combine
+                std::map<std::string,AP_DataType> giftMotherBoxKeys;
+                for (int team : teams_set)
+                    giftMotherBoxKeys.emplace("GiftBoxes;" + std::to_string(team), AP_DataType::Raw); 
+                AP_SetNotify(giftMotherBoxKeys, true);
+                AP_SetNotify("GiftBox;" + std::to_string(ap_player_team) + ";" + std::to_string(ap_player_id), AP_DataType::Raw, true);
+            }
+
             if ((root[i]["slot_data"].get("death_link", false).asBool() || root[i]["slot_data"].get("DeathLink", false).asBool()) && deathlinksupported) enable_deathlink = true;
             if (root[i]["slot_data"]["death_link_amnesty"] != Json::nullValue)
                 deathlink_amnesty = root[i]["slot_data"].get("death_link_amnesty", 0).asInt();
@@ -745,7 +792,6 @@ bool parse_response(std::string msg, std::string &request) {
                 }
             }
 
-            AP_GetServerDataRequest resync_serverdata_request;
             resync_serverdata_request.key = "APCppLastRecv" + ap_player_name + std::to_string(ap_player_id);
             resync_serverdata_request.value = &last_item_idx;
             resync_serverdata_request.type = AP_DataType::Int;
@@ -814,7 +860,7 @@ bool parse_response(std::string msg, std::string &request) {
                 map_server_data.erase(itr);
             }
         } else if (cmd == "SetReply") {
-            if (root[i]["key"].asString().rfind("GiftBox", 0) == 0) {
+            if (gifting_supported && root[i]["key"].asString().rfind("GiftBox", 0) == 0) {
                 // Reserved by library. Used for Gifting API
                 std::string raw_val;
                 std::string raw_orig_val;
@@ -988,7 +1034,7 @@ bool parse_response(std::string msg, std::string &request) {
                 // Add targets to bounce package
                 #define ADD_TARGETS( targets ) \
                         if (root[i].isMember(#targets)) { \
-                            for (int j = 0; j < root[i][#targets].size(); j++) { \
+                            for (unsigned int j = 0; j < root[i][#targets].size(); j++) { \
                                 targets.push_back(root[i][#targets][j].asString()); \
                             } \
                             bounce.targets = &targets; \
