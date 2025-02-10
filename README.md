@@ -16,7 +16,7 @@ The secound parameter decides whether or not to notify the player
 - `AP_SetLocationCheckedCallback(void (*f_locrecv)(int))` with a callback that marks the location with the given id (first parameter) as checked.
 
 Optionally, for finer configuration:
-- AP_EnableQueueItemRecvMsgs(bool)` Enables or disables Item Messages for Items received for the current game. Alternative to using the game's native item reception handler, if present. Defaults to on.
+- `AP_EnableQueueItemRecvMsgs(bool)` Enables or disables Item Messages for Items received for the current game. Alternative to using the game's native item reception handler, if present. Defaults to on.
 
 Optionally, for DeathLink:
 - `AP_SetDeathLinkSupported(bool)` Enables or disables DeathLink from the Library. Defaults to off. NOTE: If on, expects DeathLink data from Archipelago.

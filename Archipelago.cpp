@@ -664,9 +664,6 @@ bool parse_response(std::string msg, std::string &request) {
             printf("AP: Authenticated\n");
             ap_player_id = root[i]["slot"].asInt(); // MUST be called before resetitemvalues, otherwise PrivateServerDataPrefix, GetPlayerID return broken values!
             (*resetItemValues)();
-            auth = true;
-            ssl_success = auth && isSSL;
-            refused = false;
 
             for (unsigned int j = 0; j < root[i]["checked_locations"].size(); j++) {
                 //Sync checks with server
@@ -693,7 +690,7 @@ bool parse_response(std::string msg, std::string &request) {
             for (std::string key : slotdata_strings) {
                 if (map_slotdata_callback_int.count(key)) {
                     (*map_slotdata_callback_int.at(key))(root[i]["slot_data"][key].asInt());
-                    } else if (map_slotdata_callback_raw.count(key)) {
+                } else if (map_slotdata_callback_raw.count(key)) {
                     (*map_slotdata_callback_raw.at(key))(writer.write(root[i]["slot_data"][key]));
                 } else if (map_slotdata_callback_mapintint.count(key)) {
                     std::map<int,int> out;
@@ -702,7 +699,6 @@ bool parse_response(std::string msg, std::string &request) {
                     }
                     (*map_slotdata_callback_mapintint.at(key))(out);
                 }
-                
             }
 
             resync_serverdata_request.key = "APCppLastRecv" + ap_player_name + std::to_string(ap_player_id);
@@ -737,6 +733,10 @@ bool parse_response(std::string msg, std::string &request) {
                 Json::Value sync;
                 sync["cmd"] = "Sync";
                 req_t.append(sync);
+
+                auth = true;
+                ssl_success = auth && isSSL;
+                refused = false;
             }
             request = writer.write(req_t);
             return true;
@@ -975,6 +975,12 @@ void parseDataPkg(Json::Value new_datapkg) {
     }
     WriteFileJSON(datapkg_cache, datapkg_cache_path);
     parseDataPkg();
+
+    if (datapkg_outdated_games.empty()){
+        auth = true;
+        ssl_success = auth && isSSL;
+        refused = false;
+    }
 }
 
 void parseDataPkg() {
