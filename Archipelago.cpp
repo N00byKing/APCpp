@@ -706,8 +706,6 @@ bool parse_response(std::string msg, std::string &request) {
             resync_serverdata_request.type = AP_DataType::Int;
             AP_GetServerData(&resync_serverdata_request);
 
-            AP_RoomInfo info;
-            AP_GetRoomInfo(&info);
             Json::Value req_t = Json::arrayValue;
             if (enable_deathlink && deathlinksupported) {
                 Json::Value setdeathlink;
@@ -716,7 +714,7 @@ bool parse_response(std::string msg, std::string &request) {
                 req_t.append(setdeathlink);
             }
             // Get datapackage for outdated games
-            for (std::pair<std::string,std::string> game_pkg : info.datapackage_checksums) {
+            for (std::pair<std::string,std::string> game_pkg : lib_room_info.datapackage_checksums) {
                 if (datapkg_cache.get("games", Json::objectValue).get(game_pkg.first, Json::objectValue).get("checksum", "_None") != game_pkg.second) {
                     printf("AP: Cache outdated for game: %s\n", game_pkg.first.c_str());
                     datapkg_outdated_games.insert(game_pkg.first);
