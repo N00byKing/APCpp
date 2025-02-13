@@ -31,6 +31,8 @@ endif ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
 # Attempt finding system version of zlib
 find_package(ZLIB)
 if (NOT ZLIB_FOUND)
+    # Force static build for zlib if not in system, and alias static to shared for IXWebsocket
+    set(ZLIB_BUILD_SHARED OFF)
     include(FetchContent)
     FetchContent_Declare(
         zlib
@@ -38,6 +40,7 @@ if (NOT ZLIB_FOUND)
         OVERRIDE_FIND_PACKAGE
     )
     FetchContent_MakeAvailable(zlib)
+    add_library(ZLIB::ZLIB ALIAS zlibstatic)
 endif (NOT ZLIB_FOUND)
 
 set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
