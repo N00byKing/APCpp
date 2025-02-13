@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-add_library(APCpp SHARED Archipelago.cpp Archipelago.h)
+add_library(APCpp SHARED Archipelago.cpp)
+set_target_properties(APCpp PROPERTIES PUBLIC_HEADER Archipelago.h)
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
@@ -31,6 +32,7 @@ endif ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
 find_package(ZLIB)
 if (NOT ZLIB_FOUND)
     add_subdirectory(zlib)
+    set(ZLIB_DIR ${CMAKE_CURRENT_BINARY_DIR}/zlib)
 endif (NOT ZLIB_FOUND)
 
 set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
@@ -65,3 +67,5 @@ endif((NOT JSONCPP_FOUND))
 if (WIN32)
     target_link_libraries(APCpp ws2_32)
 endif(WIN32)
+
+install(TARGETS APCpp PUBLIC_HEADER)
