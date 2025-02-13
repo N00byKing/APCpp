@@ -31,7 +31,7 @@ endif ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
 find_package(ZLIB)
 if (NOT ZLIB_FOUND)
     add_subdirectory(zlib)
-endif (ZLIB_FOUND)
+endif (NOT ZLIB_FOUND)
 
 set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(IXWebSocket)
