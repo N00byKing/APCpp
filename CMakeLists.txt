@@ -46,6 +46,12 @@ if (PKGCONFIG_FOUND AND (NOT MINGW))
     endif(JSONCPP_FOUND)
 endif(PKGCONFIG_FOUND AND (NOT MINGW))
 
+# Attempt finding system version of zlib
+find_package(ZLIB)
+if (NOT ZLIB_FOUND)
+    add_subdirectory(zlib)
+endif (ZLIB_FOUND)
+
 # No system version: Enable bundled
 if((NOT JSONCPP_FOUND))
     set(JSONCPP_WITH_TESTS OFF CACHE BOOL "" FORCE)
