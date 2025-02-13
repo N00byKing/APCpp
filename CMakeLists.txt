@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.24)
 
 project(APCpp)
 set(CMAKE_CXX_STANDARD 11)
@@ -31,8 +31,13 @@ endif ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
 # Attempt finding system version of zlib
 find_package(ZLIB)
 if (NOT ZLIB_FOUND)
-    add_subdirectory(zlib)
-    set(ZLIB_DIR ${CMAKE_CURRENT_BINARY_DIR}/zlib)
+    include(FetchContent)
+    FetchContent_Declare(
+        zlib
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib
+        OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_MakeAvailable(zlib)
 endif (NOT ZLIB_FOUND)
 
 set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
