@@ -14,7 +14,7 @@ set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
 
 # Enable TLS. On Windows, build mbedTLS
 set(USE_TLS ON CACHE BOOL "Enable TLS support" FORCE)
-if (WIN32 AND USE_TLS)
+if ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
     set(APCPP_MBEDTLS_VER 3.6.2)
     execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f mbedtls-${APCPP_MBEDTLS_VER})
     execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls-${APCPP_MBEDTLS_VER}.tar.bz2)
@@ -25,7 +25,7 @@ if (WIN32 AND USE_TLS)
     set(MBEDX509_LIBRARY mbedx509)
     set(MBEDCRYPTO_LIBRARY mbedcrypto)
     add_subdirectory(${CMAKE_BINARY_DIR}/mbedtls-${APCPP_MBEDTLS_VER} mbedtls_bin)
-endif (WIN32 AND USE_TLS)
+endif ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
 
 set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(IXWebSocket)
