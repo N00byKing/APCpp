@@ -27,6 +27,12 @@ if ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
     add_subdirectory(${CMAKE_BINARY_DIR}/mbedtls-${APCPP_MBEDTLS_VER} mbedtls_bin)
 endif ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
 
+# Attempt finding system version of zlib
+find_package(ZLIB)
+if (NOT ZLIB_FOUND)
+    add_subdirectory(zlib)
+endif (ZLIB_FOUND)
+
 set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(IXWebSocket)
 include_directories(IXWebSocket)
@@ -45,12 +51,6 @@ if (PKGCONFIG_FOUND AND (NOT MINGW))
         target_link_libraries(APCpp ${JSONCPP_LDFLAGS})
     endif(JSONCPP_FOUND)
 endif(PKGCONFIG_FOUND AND (NOT MINGW))
-
-# Attempt finding system version of zlib
-find_package(ZLIB)
-if (NOT ZLIB_FOUND)
-    add_subdirectory(zlib)
-endif (ZLIB_FOUND)
 
 # No system version: Enable bundled
 if((NOT JSONCPP_FOUND))
