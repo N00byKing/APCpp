@@ -43,7 +43,7 @@ if (MINGW OR NOT ZLIB_FOUND)
     )
     FetchContent_MakeAvailable(zlib)
     add_library(ZLIB::ZLIB ALIAS zlibstatic)
-endif (NOT ZLIB_FOUND)
+endif (MINGW OR NOT ZLIB_FOUND)
 
 set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(IXWebSocket)
