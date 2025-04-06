@@ -24,7 +24,7 @@ if ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
     set(MBEDTLS_LIBRARY mbedtls)
     set(MBEDX509_LIBRARY mbedx509)
     set(MBEDCRYPTO_LIBRARY mbedcrypto)
-    add_subdirectory(${CMAKE_BINARY_DIR}/mbedtls-${APCPP_MBEDTLS_VER} mbedtls_bin)
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mbedtls-${APCPP_MBEDTLS_VER} mbedtls_bin)
 endif ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
 
 set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
