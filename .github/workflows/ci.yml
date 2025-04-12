@@ -18,7 +18,6 @@ jobs:
         mkdir build
         cd build
         cmake -G "Visual Studio 17 2022" -A Win32 `
-              -DUSE_ZLIB=OFF `
               -DCMAKE_BUILD_TYPE=Release ..
     - name: Build (default version)
       run: |
