@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.24)
 
 project(APCpp)
 set(CMAKE_CXX_STANDARD 17)
@@ -11,24 +11,45 @@ add_library(APCpp SHARED
     Archipelago_Gifting.cpp
     Archipelago.h)
 
+set_target_properties(APCpp PROPERTIES PUBLIC_HEADER Archipelago.h)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
 
 # Enable TLS. On Windows, build mbedTLS
 set(USE_TLS ON CACHE BOOL "Enable TLS support" FORCE)
-if (WIN32 AND USE_TLS)
+if ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
     set(APCPP_MBEDTLS_VER 3.6.2)
     execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f mbedtls-${APCPP_MBEDTLS_VER})
-    execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls-${APCPP_MBEDTLS_VER}.tar.bz2)
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls-${APCPP_MBEDTLS_VER}.tar.bz2
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
     set(USE_STATIC_MBEDTLS_LIBRARY ON CACHE BOOL "" FORCE)
     set(MBEDTLS_INCLUDE_DIRS ${CMAKE_BINARY_DIR}/mbedtls-${APCPP_MBEDTLS_VER}/include)
     set(MBEDTLS_VERSION_GREATER_THAN_3 ${MBEDTLS_INCLUDE_DIRS})
     set(MBEDTLS_LIBRARY mbedtls)
     set(MBEDX509_LIBRARY mbedx509)
     set(MBEDCRYPTO_LIBRARY mbedcrypto)
-    add_subdirectory(${CMAKE_BINARY_DIR}/mbedtls-${APCPP_MBEDTLS_VER} mbedtls_bin)
-endif (WIN32 AND USE_TLS)
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mbedtls-${APCPP_MBEDTLS_VER} mbedtls_bin)
+endif ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
+
+# Attempt finding system version of zlib
+if (NOT MINGW)
+    find_package(ZLIB)
+endif (NOT MINGW)
+if (MINGW OR NOT ZLIB_FOUND)
+    # Force static build for zlib if not in system, and alias static to shared for IXWebsocket
+    set(ZLIB_BUILD_SHARED OFF)
+    include(FetchContent)
+    FetchContent_Declare(
+        zlib
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib
+        OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_MakeAvailable(zlib)
+    add_library(ZLIB::ZLIB ALIAS zlibstatic)
+endif (MINGW OR NOT ZLIB_FOUND)
 
 set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(IXWebSocket)
@@ -62,3 +83,5 @@ endif((NOT JSONCPP_FOUND))
 if (WIN32)
     target_link_libraries(APCpp ws2_32)
 endif(WIN32)
+
+install(TARGETS APCpp PUBLIC_HEADER)
