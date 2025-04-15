@@ -62,7 +62,7 @@ void (*resetItemValues)();
 void (*getitemfunc)(int64_t,bool);
 void (*checklocfunc)(int64_t);
 void (*locinfofunc)(std::vector<AP_NetworkItem>) = nullptr;
-void (*recvdeath)() = nullptr;
+void (*recvdeath)(std::string, std::string) = nullptr;
 void (*setreplyfunc)(AP_SetReply) = nullptr;
 void (*bouncedfunc)(AP_Bounce) = nullptr;
 
@@ -420,7 +420,7 @@ void AP_SetLocationInfoCallback(void (*f_locinfrecv)(std::vector<AP_NetworkItem>
     locinfofunc = f_locinfrecv;
 }
 
-void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)()) {
+void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)(std::string,std::string)) {
     recvdeath = f_deathrecv;
 }
 
@@ -916,7 +916,9 @@ bool parse_response(std::string msg, std::string &request) {
                         if (root[i]["data"]["source"].asString() == ap_player_name) break; // We already paid our penance
                         deathlinkstat = true;
                         if (recvdeath != nullptr) {
-                            (*recvdeath)();
+                            std::string source = root[i]["data"]["source"].asString();
+                            std::string cause = root[i]["data"]["cause"].isNull() ? "" : root[i]["data"]["cause"].asString();
+                            (*recvdeath)(source, cause);
                         }
                         break;
                     }
