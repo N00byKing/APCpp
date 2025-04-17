@@ -1,14 +1,18 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(APCpp)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-add_library(APCpp SHARED Archipelago.cpp)
+add_library(APCpp SHARED
+    Archipelago.cpp
+    Archipelago_Gifting.cpp
+    Archipelago.h)
 set_target_properties(APCpp PROPERTIES PUBLIC_HEADER Archipelago.h)
 
+set_target_properties(APCpp PROPERTIES PUBLIC_HEADER Archipelago.h)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
