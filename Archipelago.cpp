@@ -77,6 +77,7 @@ std::map<std::string,AP_DataType> map_serverdata_typemanage;
 AP_GetServerDataRequest resync_serverdata_request;
 uint64_t last_item_idx = 0;
 
+
 // Gifting interop
 bool gifting_supported = false;
 bool gifting_autoReject = true;

@@ -10,6 +10,7 @@ add_library(APCpp SHARED
     Archipelago.cpp
     Archipelago_Gifting.cpp
     Archipelago.h)
+set_target_properties(APCpp PROPERTIES PUBLIC_HEADER Archipelago.h)
 
 set_target_properties(APCpp PROPERTIES PUBLIC_HEADER Archipelago.h)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
