@@ -5,6 +5,7 @@
 #include <map>
 #include <cstdint>
 #include <set>
+#include <functional>
 
 void AP_Init(const char*, const char*, const char*, const char*);
 void AP_Init(const char*);
@@ -51,26 +52,26 @@ void AP_SetDeathLinkSupported(bool);
 /* Required Callback Functions */
 
 //Parameter Function must reset local state
-void AP_SetItemClearCallback(void (*f_itemclr)());
+void AP_SetItemClearCallback(std::function<void()> f_itemclr);
 //Parameter Function must collect item id given with parameter. Secound parameter indicates whether or not to notify player
-void AP_SetItemRecvCallback(void (*f_itemrecv)(int64_t,bool));
+void AP_SetItemRecvCallback(std::function<void(int64_t,bool)> f_itemrecv);
 //Parameter Function must mark given location id as checked
-void AP_SetLocationCheckedCallback(void (*f_locrecv)(int64_t));
+void AP_SetLocationCheckedCallback(std::function<void(int64_t)> f_locrecv);
 
 /* Optional Callback Functions */
 
 //Parameter Function will be called when Death Link is received. Alternative to Pending/Clear usage
-void AP_SetDeathLinkRecvCallback(void (*f_deathrecv)());
+void AP_SetDeathLinkRecvCallback(std::function<void()> f_deathrecv);
 
 // Parameter Function receives Slotdata of respective type
-void AP_RegisterSlotDataIntCallback(std::string, void (*f_slotdata)(int));
-void AP_RegisterSlotDataMapIntIntCallback(std::string, void (*f_slotdata)(std::map<int,int>));
-void AP_RegisterSlotDataRawCallback(std::string, void (*f_slotdata)(std::string));
+void AP_RegisterSlotDataIntCallback(std::string, std::function<void(int)> f_slotdata);
+void AP_RegisterSlotDataMapIntIntCallback(std::string, std::function<void(std::map<int,int>)> f_slotdata);
+void AP_RegisterSlotDataRawCallback(std::string, std::function<void(std::string)> f_slotdata);
 
 // Send LocationScouts packet
 void AP_SendLocationScouts(std::set<int64_t> const& locations, int create_as_hint);
 // Receive Function for LocationInfo
-void AP_SetLocationInfoCallback(void (*f_locrecv)(std::vector<AP_NetworkItem>));
+void AP_SetLocationInfoCallback(std::function<void(std::vector<AP_NetworkItem>)> f_locinfrecv);
 
 /* Game Management Functions */
 
@@ -217,7 +218,7 @@ std::string AP_GetPrivateServerDataPrefix();
 // Parameter Function receives all SetReply's
 // ! Pointers in AP_SetReply struct only valid within function !
 // If values are required beyond that a copy is needed
-void AP_RegisterSetReplyCallback(void (*f_setreply)(AP_SetReply));
+void AP_RegisterSetReplyCallback(std::function<void(AP_SetReply)> f_setreply);
 
 // Receive all SetReplys with Keys in parameter list
 void AP_SetNotify(std::map<std::string,AP_DataType>);
@@ -228,4 +229,4 @@ void AP_SetNotify(std::string, AP_DataType);
 void AP_SendBounce(AP_Bounce);
 
 // Receive Bounced packages. Disables automatic DeathLink management
-void AP_RegisterBouncedCallback(void (*f_bounced)(AP_Bounce));
+void AP_RegisterBouncedCallback(std::function<void(AP_Bounce)> f_bounced);
