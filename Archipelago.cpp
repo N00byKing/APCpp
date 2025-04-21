@@ -58,13 +58,13 @@ std::map<std::pair<std::string,int64_t>, std::string> map_location_id_name;
 std::map<std::pair<std::string,int64_t>, std::string> map_item_id_name;
 
 // Callback function pointers
-std::function<void()> resetItemValues;
-std::function<void(int64_t,bool)> getitemfunc;
-std::function<void(int64_t)> checklocfunc;
-std::function<void(std::vector<AP_NetworkItem>)> locinfofunc;
-std::function<void()> recvdeath;
-std::function<void(AP_SetReply)> setreplyfunc;
-std::function<void(AP_Bounce)> bouncedfunc;
+std::function<void()> resetItemValues = nullptr;
+std::function<void(int64_t,bool)> getitemfunc = nullptr;
+std::function<void(int64_t)> checklocfunc = nullptr;
+std::function<void(std::vector<AP_NetworkItem>)> locinfofunc = nullptr;
+std::function<void()> recvdeath = nullptr;
+std::function<void(AP_SetReply)> setreplyfunc = nullptr;
+std::function<void(AP_Bounce)> bouncedfunc = nullptr;
 
 // Serverdata Management
 std::map<std::string,AP_DataType> map_serverdata_typemanage;
