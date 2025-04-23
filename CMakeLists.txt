@@ -59,23 +59,23 @@ endif(MINGW)
 
 # Attempt finding system version of JsonCpp
 find_package(PkgConfig)
-if (PKGCONFIG_FOUND AND (NOT MINGW))
+if (PKGCONFIG_FOUND AND (NOT MINGW) AND (NOT BUNDLED_JSONCPP))
     pkg_check_modules(JSONCPP jsoncpp)
     if (JSONCPP_FOUND)
         include_directories(${JSONCPP_INCLUDE_DIRS})
         target_link_libraries(APCpp ${JSONCPP_LDFLAGS})
     endif(JSONCPP_FOUND)
-endif(PKGCONFIG_FOUND AND (NOT MINGW))
+endif(PKGCONFIG_FOUND AND (NOT MINGW) AND (NOT BUNDLED_JSONCPP))
 
 # No system version: Enable bundled
-if((NOT JSONCPP_FOUND))
+if((NOT JSONCPP_FOUND) OR BUNDLED_JSONCPP)
     set(JSONCPP_WITH_TESTS OFF CACHE BOOL "" FORCE)
     set(JSONCPP_WITH_POST_BUILD_UNITTEST OFF CACHE BOOL "" FORCE)
     add_subdirectory(jsoncpp)
     set_property(TARGET jsoncpp_static PROPERTY POSITION_INDEPENDENT_CODE ON)
     include_directories(jsoncpp/include)
     target_link_libraries(APCpp jsoncpp_static)
-endif((NOT JSONCPP_FOUND))
+endif((NOT JSONCPP_FOUND) OR BUNDLED_JSONCPP)
 
 if (WIN32)
     target_link_libraries(APCpp ws2_32)
