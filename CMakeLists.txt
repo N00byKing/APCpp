@@ -12,7 +12,6 @@ add_library(APCpp SHARED
     Archipelago.h)
 set_target_properties(APCpp PROPERTIES PUBLIC_HEADER Archipelago.h)
 
-set_target_properties(APCpp PROPERTIES PUBLIC_HEADER Archipelago.h)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
