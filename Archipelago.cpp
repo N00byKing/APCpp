@@ -390,7 +390,7 @@ void AP_DeathLinkSend() {
     std::chrono::time_point<std::chrono::system_clock> timestamp = std::chrono::system_clock::now();
     AP_Bounce b;
     Json::Value v;
-    v["time"] = std::chrono::duration_cast<std::chrono::seconds>(timestamp.time_since_epoch()).count();
+    v["time"] = (int64_t)std::chrono::duration_cast<std::chrono::seconds>(timestamp.time_since_epoch()).count();
     v["source"] = ap_player_name; // Name and Shame >:D
     b.data = writer.write(v);
     b.games = nullptr;
