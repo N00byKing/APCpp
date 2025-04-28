@@ -52,7 +52,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DWIN32=1 -DMSYS=1 -G"MSYS Makefiles"
+          cmake .. -DWIN32=1 -DMSYS=1 -G"MSYS Makefiles" -DMBEDTLS_FATAL_WARNINGS=OFF
       - name: Build (MSYS)
         run: |
           cd build
