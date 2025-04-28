@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
     - name: CMake configure (default version)
@@ -34,3 +34,26 @@ jobs:
         name: APCpp-win
         path: |
           artifact/*
+  build-msys:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: git mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake unzip make
+      - name: CMake configure (MSYS)
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DWIN32=1 -DMSYS=1 -G"MSYS Makefiles"
+      - name: Build (MSYS)
+        run: |
+          cd build
+          cmake --build . 
