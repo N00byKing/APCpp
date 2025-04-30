@@ -16,6 +16,15 @@ set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
 
 # Enable TLS. On Windows, build mbedTLS
 set(USE_TLS ON CACHE BOOL "Enable TLS support" FORCE)
+
+# Fallback to mbedtls if openssl not found
+if (NOT MINGW)
+    find_package(OpenSSL)
+    if (NOT OPENSSL_FOUND)
+        set(USE_MBED_TLS ON)
+    endif(NOT OPENSSL_FOUND)
+endif (NOT MINGW)
+
 if ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
     set(APCPP_MBEDTLS_VER 3.6.3)
     execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f mbedtls-${APCPP_MBEDTLS_VER})
