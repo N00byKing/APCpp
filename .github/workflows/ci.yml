@@ -6,9 +6,7 @@ on: [push, pull_request]
 jobs:
   build-win:
     name: Build (windows-latest)
-
     runs-on: windows-latest
-
     steps:
     - uses: actions/checkout@v3
       with:
@@ -34,7 +32,9 @@ jobs:
         name: APCpp-win
         path: |
           artifact/*
+
   build-msys:
+    name: Build (MSYS)
     runs-on: windows-latest
     defaults:
       run:
