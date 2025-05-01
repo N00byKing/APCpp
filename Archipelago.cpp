@@ -421,7 +421,7 @@ void AP_SetLocationInfoCallback(std::function<void(std::vector<AP_NetworkItem>)>
 }
 
 void AP_SetDeathLinkRecvCallback(std::function<void()> f_deathrecv) {
-    recvdeath = [f_deathrecv](std::string, std::string){ f_deathrecv() };
+    recvdeath = [f_deathrecv](std::string, std::string){ f_deathrecv(); };
 }
 void AP_SetDeathLinkRecvCallback(std::function<void(std::string, std::string)> f_deathrecv) {
     recvdeath = f_deathrecv;
