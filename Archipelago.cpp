@@ -62,7 +62,7 @@ std::function<void()> resetItemValues = nullptr;
 std::function<void(int64_t,bool)> getitemfunc = nullptr;
 std::function<void(int64_t)> checklocfunc = nullptr;
 std::function<void(std::vector<AP_NetworkItem>)> locinfofunc = nullptr;
-std::function<void(std:string, std::string)> recvdeath = nullptr;
+std::function<void(std::string, std::string)> recvdeath = nullptr;
 std::function<void(AP_SetReply)> setreplyfunc = nullptr;
 std::function<void(AP_Bounce)> bouncedfunc = nullptr;
 
