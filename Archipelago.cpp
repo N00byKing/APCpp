@@ -62,7 +62,7 @@ std::function<void()> resetItemValues = nullptr;
 std::function<void(int64_t,bool)> getitemfunc = nullptr;
 std::function<void(int64_t)> checklocfunc = nullptr;
 std::function<void(std::vector<AP_NetworkItem>)> locinfofunc = nullptr;
-std::function<void()> recvdeath = nullptr;
+std::function<void(std::string, std::string)> recvdeath = nullptr;
 std::function<void(AP_SetReply)> setreplyfunc = nullptr;
 std::function<void(AP_Bounce)> bouncedfunc = nullptr;
 
@@ -421,6 +421,9 @@ void AP_SetLocationInfoCallback(std::function<void(std::vector<AP_NetworkItem>)>
 }
 
 void AP_SetDeathLinkRecvCallback(std::function<void()> f_deathrecv) {
+    recvdeath = [f_deathrecv](std::string, std::string){ f_deathrecv(); };
+}
+void AP_SetDeathLinkRecvCallback(std::function<void(std::string, std::string)> f_deathrecv) {
     recvdeath = f_deathrecv;
 }
 
@@ -912,11 +915,14 @@ bool parse_response(std::string msg, std::string &request) {
                 // Only do native DeathLink handling, client is not interested in bounce packets
                 for (unsigned int j = 0; j < root[i]["tags"].size(); j++) {
                     if (root[i]["tags"][j].asString() == "DeathLink") {
+                        std::string source = root[i]["data"]["source"].asString();
+                        
                         // Suspicions confirmed ;-; But maybe we died, not them?
-                        if (root[i]["data"]["source"].asString() == ap_player_name) break; // We already paid our penance
+                        if (source == ap_player_name) break; // We already paid our penance
                         deathlinkstat = true;
                         if (recvdeath) {
-                            recvdeath();
+                            std::string cause = root[i]["data"]["cause"].isNull() ? "" : root[i]["data"]["cause"].asString();
+                            recvdeath(source, cause);
                         }
                         break;
                     }
