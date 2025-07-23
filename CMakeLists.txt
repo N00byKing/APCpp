@@ -26,7 +26,7 @@ if (NOT MINGW)
 endif (NOT MINGW)
 
 if ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
-    set(APCPP_MBEDTLS_VER 3.6.3)
+    set(APCPP_MBEDTLS_VER 3.6.4)
     execute_process(COMMAND ${CMAKE_COMMAND} -E remove -f mbedtls-${APCPP_MBEDTLS_VER})
     execute_process(
       COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls-${APCPP_MBEDTLS_VER}.tar.bz2
