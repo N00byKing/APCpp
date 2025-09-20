@@ -77,6 +77,8 @@ std::map<std::string,AP_DataType> map_serverdata_typemanage;
 AP_GetServerDataRequest resync_serverdata_request;
 uint64_t last_item_idx = 0;
 
+void resolveDataStorageOp(Json::Value op);
+
 // Gifting interop
 bool gifting_supported = false;
 bool gifting_autoReject = true;
@@ -573,9 +575,10 @@ void AP_CommitServerData() {
         std::string key = req[req.size()-1]["cmd"].asString();
         if (key == "Set" || key == "SetNotify") // Set has local completion at this stage
             *(request.second) = AP_RequestStatus::Done;
+        resolveDataStorageOp(request.first);
         queue_server_data.pop();
     }
-    APSend(writer.write(req));
+    if (multiworld) APSend(writer.write(req));
 }
 
 void AP_SetServerData(AP_SetServerDataRequest* request) {
