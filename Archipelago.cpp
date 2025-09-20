@@ -532,11 +532,17 @@ void AP_BulkSetServerData(AP_SetServerDataRequest* request) {
                 req_t["operations"][i]["operation"] = request->operations[i].operation;
                 req_t["operations"][i]["value"] = *((int*)request->operations[i].value);
             }
+            if (request->default_value != nullptr) {
+                req_t["default"] = *((int*)request->default_value);
+            }
             break;
         case AP_DataType::Double:
             for (int i = 0; i < request->operations.size(); i++) {
                 req_t["operations"][i]["operation"] = request->operations[i].operation;
                 req_t["operations"][i]["value"] = *((double*)request->operations[i].value);
+            }
+            if (request->default_value != nullptr) {
+                req_t["default"] = *((double*)request->default_value);
             }
             break;
         default:
@@ -546,8 +552,8 @@ void AP_BulkSetServerData(AP_SetServerDataRequest* request) {
                 reader.parse((*(std::string*)request->operations[i].value), data);
                 req_t["operations"][i]["value"] = data;
             }
-            Json::Value default_val_json;
             if (request->default_value != nullptr) {
+                Json::Value default_val_json;
                 reader.parse(*((std::string*)request->default_value), default_val_json);
                 req_t["default"] = default_val_json;
             }
