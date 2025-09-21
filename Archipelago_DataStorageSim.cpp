@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cstdio>
 #include <functional>
 #include <json/value.h>
 #include <json/writer.h>
@@ -35,7 +36,7 @@ void operation_default(std::string key, Json::Value new_val) {
     // Noop as default is set in resolveDataStorageOp.
 }
 
-static std::map<const std::string , std::function<void(std::string,Json::Value)>> known_operations = {
+static std::map<const std::string, const std::function<void(std::string,Json::Value)>> known_operations = {
     {"replace", operation_replace},
     {"or", operation_or},
     {"default", operation_default},
@@ -53,7 +54,10 @@ void resolveDataStorageOp(Json::Value dataOp) {
         for (Json::Value atomicOp : dataOp["operations"]) {
             std::string operation_str = atomicOp["operation"].asString();
             Json::Value newVal = atomicOp["value"];
-            known_operations[operation_str](key, newVal);
+            if (known_operations.count(operation_str))
+                known_operations[operation_str](key, newVal);
+            else
+                printf("AP: Unimplement Datastore operation \"%s\" in offline session!\n", operation_str.c_str());
         }
         WriteFileJSON(sp_save_root, sp_save_path);
         if (dataOp["want_reply"].asBool()) {
