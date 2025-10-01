@@ -396,7 +396,7 @@ void AP_StoryComplete() {
     APSend(writer.write(req_t));
 }
 
-void AP_DeathLinkSend() {
+void AP_DeathLinkSend(const std::string &cause) {
     if (!enable_deathlink || !multiworld) return;
     if (cur_deathlink_amnesty > 0) {
         cur_deathlink_amnesty--;
@@ -408,12 +408,25 @@ void AP_DeathLinkSend() {
     Json::Value v;
     v["time"] = (int64_t)std::chrono::duration_cast<std::chrono::seconds>(timestamp.time_since_epoch()).count();
     v["source"] = ap_player_name; // Name and Shame >:D
+    if (!cause.empty())
+    {
+        std::string cause_pname = cause;
+        size_t pname_marker = cause_pname.find("%YOU%");
+
+        if (pname_marker != std::string::npos)
+            cause_pname.replace(pname_marker, 5, ap_player_name);
+        v["cause"] = cause_pname;
+    }
     b.data = writer.write(v);
     b.games = nullptr;
     b.slots = nullptr;
     std::vector<std::string> tags = {std::string("DeathLink")};
     b.tags = &tags;
     AP_SendBounce(b);
+}
+
+void AP_DeathLinkSend() {
+    AP_DeathLinkSend("");
 }
 
 void AP_EnableQueueItemRecvMsgs(bool b) {
