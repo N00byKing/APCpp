@@ -575,7 +575,8 @@ void AP_CommitServerData() {
         std::string key = req[req.size()-1]["cmd"].asString();
         if (key == "Set" || key == "SetNotify") // Set has local completion at this stage
             *(request.second) = AP_RequestStatus::Done;
-        resolveDataStorageOp(request.first);
+        if (!multiworld)
+            resolveDataStorageOp(request.first);
         queue_server_data.pop();
     }
     if (multiworld) APSend(writer.write(req));
