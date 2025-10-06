@@ -43,7 +43,12 @@ endif ((WIN32 AND USE_TLS) OR USE_MBED_TLS)
 
 # Attempt finding system version of zlib
 if (NOT MINGW)
-    find_package(ZLIB)
+    find_package(ZLIB QUIET)
+    if (ZLIB_FOUND)
+        message("Using system zlib installation.")
+    else()
+        message("Using bundled zlib.")
+    endif(ZLIB_FOUND)
 endif (NOT MINGW)
 if (MINGW OR NOT ZLIB_FOUND)
     # Force static build for zlib if not in system, and alias static to shared for IXWebsocket
