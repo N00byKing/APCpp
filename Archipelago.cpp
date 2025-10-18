@@ -815,8 +815,9 @@ bool parse_response(std::string msg, std::string &request) {
                 req_t.append(setdeathlink);
             }
             // Get datapackage for outdated games
+            const Json::Value dpkg_cache_games = datapkg_cache.get("games", Json::objectValue);
             for (std::pair<std::string,std::string> game_pkg : lib_room_info.datapackage_checksums) {
-                if (datapkg_cache.get("games", Json::objectValue).get(game_pkg.first, Json::objectValue).get("checksum", "_None") != game_pkg.second) {
+                if (dpkg_cache_games.get(game_pkg.first, Json::objectValue).get("checksum", "_None") != game_pkg.second) {
                     printf("AP: Cache outdated for game: %s\n", game_pkg.first.c_str());
                     datapkg_outdated_games.insert(game_pkg.first);
                 }
@@ -1088,9 +1089,9 @@ void parseDataPkg(Json::Value new_datapkg) {
         printf("AP: Game Cache updated for %s\n", game.c_str());
     }
     WriteFileJSON(datapkg_cache, datapkg_cache_path);
-    parseDataPkg();
 
     if (datapkg_outdated_games.empty()){
+        parseDataPkg(); // Only after all datapackages are up to date
         auth = true;
         ssl_success = auth && isSSL;
         refused = false;
