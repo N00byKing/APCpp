@@ -58,8 +58,8 @@ jobs:
           cd build
           cmake --build . 
   
-  build-linux-gcc:
-    name: Build (Linux, GCC)
+  build-linux:
+    name: Build (Linux)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,21 +78,18 @@ jobs:
           cd build
           cmake --build .
   
-  build-linux-clang:
-    name: Build (Linux, Clang)
-    runs-on: ubuntu-latest
+  build-mac:
+    name: Build (macOS)
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
-      - name: Install Dependencies
-        run: |
-          sudo apt install cmake clang-19
       - name: CMake configure
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+          cmake ..
       - name: Build
         run: |
           cd build
