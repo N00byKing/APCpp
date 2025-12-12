@@ -262,7 +262,7 @@ struct AP_GiftTrait {
 struct AP_Gift {
     std::string ID;
     std::string ItemName;
-    size_t Amount;
+    uint64_t Amount;
     uint64_t ItemValue;
     std::vector<AP_GiftTrait> Traits;
     std::string Sender;
