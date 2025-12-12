@@ -8,7 +8,7 @@ jobs:
     name: Build (windows-latest)
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
     - name: CMake configure (default version)
@@ -40,7 +40,7 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       - uses: msys2/setup-msys2@v2
@@ -52,8 +52,45 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DWIN32=1 -DMSYS=1 -G"MSYS Makefiles" -DMBEDTLS_FATAL_WARNINGS=OFF
+          cmake .. -DWIN32=1 -DMSYS=1 -G"MSYS Makefiles"
       - name: Build (MSYS)
+        run: |
+          cd build
+          cmake --build . 
+  
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Install Dependencies
+        run: |
+          sudo apt install cmake
+      - name: CMake configure
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+      - name: Build
+        run: |
+          cd build
+          cmake --build .
+  
+  build-mac:
+    name: Build (macOS)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: CMake configure
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+      - name: Build
         run: |
           cd build
           cmake --build . 
