@@ -8,7 +8,7 @@ jobs:
     name: Build (windows-latest)
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
     - name: CMake configure (default version)
@@ -40,7 +40,7 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       - uses: msys2/setup-msys2@v2
@@ -52,8 +52,48 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DWIN32=1 -DMSYS=1 -G"MSYS Makefiles" -DMBEDTLS_FATAL_WARNINGS=OFF
+          cmake .. -DWIN32=1 -DMSYS=1 -G"MSYS Makefiles"
       - name: Build (MSYS)
+        run: |
+          cd build
+          cmake --build . 
+  
+  build-linux-gcc:
+    name: Build (Linux, GCC)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Install Dependencies
+        run: |
+          sudo apt install cmake
+      - name: CMake configure
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+      - name: Build
+        run: |
+          cd build
+          cmake --build .
+  
+  build-linux-clang:
+    name: Build (Linux, Clang)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Install Dependencies
+        run: |
+          sudo apt install cmake clang-19
+      - name: CMake configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+      - name: Build
         run: |
           cd build
           cmake --build . 
