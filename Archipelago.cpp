@@ -797,7 +797,7 @@ bool parse_response(std::string msg, std::string &request) {
                     }
                     map_slotdata_callback_mapintint[key](out);
                 } else {
-                    printf("AP: Warning: Unmapped slot data with key \"%s\"!", key.c_str());
+                    printf("AP: Warning: Unmapped slot data with key \"%s\"!\n", key.c_str());
                 }
             }
 
