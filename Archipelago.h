@@ -169,7 +169,7 @@ enum struct AP_RequestStatus {
 };
 
 enum struct AP_DataType {
-    Raw, Int, Double
+    Raw, Int, Double, Int64, UnsignedInt64
 };
 
 struct AP_GetServerDataRequest {

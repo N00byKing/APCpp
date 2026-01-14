@@ -538,6 +538,24 @@ void AP_BulkSetServerData(AP_SetServerDataRequest* request) {
                 req_t["default"] = *((int*)request->default_value);
             }
             break;
+        case AP_DataType::Int64:
+            for (int i = 0; i < request->operations.size(); i++) {
+                req_t["operations"][i]["operation"] = request->operations[i].operation;
+                req_t["operations"][i]["value"] = *((int64_t*)request->operations[i].value);
+            }
+            if (request->default_value != nullptr) {
+                req_t["default"] = *((int64_t*)request->default_value);
+            }
+            break;
+        case AP_DataType::UnsignedInt64:
+            for (int i = 0; i < request->operations.size(); i++) {
+                req_t["operations"][i]["operation"] = request->operations[i].operation;
+                req_t["operations"][i]["value"] = *((uint64_t*)request->operations[i].value);
+            }
+            if (request->default_value != nullptr) {
+                req_t["default"] = *((uint64_t*)request->default_value);
+            }
+            break;
         case AP_DataType::Double:
             for (int i = 0; i < request->operations.size(); i++) {
                 req_t["operations"][i]["operation"] = request->operations[i].operation;
@@ -614,6 +632,8 @@ void AP_SetNotify(std::map<std::string,AP_DataType> keylist, bool requestCurrent
             setDefaultRequest.want_reply = true;
             switch (keytypepair.second) {
                 case AP_DataType::Int:
+                case AP_DataType::Int64:
+                case AP_DataType::UnsignedInt64:
                 case AP_DataType::Double:
                     setDefaultRequest.operations = {{"default", &zero}};
                     setDefaultRequest.default_value = &zero;
@@ -859,6 +879,12 @@ bool parse_response(std::string msg, std::string &request) {
                 switch (target->type) {
                     case AP_DataType::Int:
                         *((int*)target->value) = root[i]["keys"][itr].asInt();
+                        break;
+                    case AP_DataType::Int64:
+                        *((int*)target->value) = root[i]["keys"][itr].asInt64();
+                        break;
+                    case AP_DataType::UnsignedInt64:
+                        *((int*)target->value) = root[i]["keys"][itr].asUInt64();
                         break;
                     case AP_DataType::Double:
                         *((double*)target->value) = root[i]["keys"][itr].asDouble();
