@@ -925,7 +925,19 @@ bool parse_response(std::string msg, std::string &request) {
                         setreply.value = &int_val;
                         setreply.original_value = &int_orig_val;
                         break;
-                    case AP_DataType::Double:
+                    case AP_DataType::Int64:
+                        int_val = root[i]["value"].asInt64();
+                        int_orig_val = root[i]["original_value"].asInt64();
+                        setreply.value = &int_val;
+                        setreply.original_value = &int_orig_val;
+                        break;
+                    case AP_DataType::UnsignedInt64:
+                        int_val = root[i]["value"].asUInt64();
+                        int_orig_val = root[i]["original_value"].asUInt64();
+                        setreply.value = &int_val;
+                        setreply.original_value = &int_orig_val;
+                        break;
+                   case AP_DataType::Double:
                         dbl_val = root[i]["value"].asDouble();
                         dbl_orig_val = root[i]["original_value"].asDouble();
                         setreply.value = &dbl_val;
