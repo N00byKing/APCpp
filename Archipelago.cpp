@@ -881,10 +881,10 @@ bool parse_response(std::string msg, std::string &request) {
                         *((int*)target->value) = root[i]["keys"][itr].asInt();
                         break;
                     case AP_DataType::Int64:
-                        *((int*)target->value) = root[i]["keys"][itr].asInt64();
+                        *((int64_t*)target->value) = root[i]["keys"][itr].asInt64();
                         break;
                     case AP_DataType::UnsignedInt64:
-                        *((int*)target->value) = root[i]["keys"][itr].asUInt64();
+                        *((uint64_t*)target->value) = root[i]["keys"][itr].asUInt64();
                         break;
                     case AP_DataType::Double:
                         *((double*)target->value) = root[i]["keys"][itr].asDouble();
