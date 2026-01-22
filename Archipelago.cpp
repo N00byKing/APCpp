@@ -766,7 +766,7 @@ bool parse_response(std::string msg, std::string &request) {
                     root[i]["players"][j]["slot"].asInt(),
                     root[i]["players"][j]["name"].asString(),
                     root[i]["players"][j]["alias"].asString(),
-                    "PLACEHOLDER"
+                    root[i]["players"][j]["game"].asString()
                 };
                 player.game = root[i]["slot_info"][std::to_string(player.slot)]["game"].asString();
                 map_players[root[i]["players"][j]["slot"].asInt()] = player;
