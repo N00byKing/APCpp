@@ -56,7 +56,7 @@ if (MINGW OR NOT ZLIB_FOUND)
     include(FetchContent)
     FetchContent_Declare(
         zlib
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib
+        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/zlib"
         OVERRIDE_FIND_PACKAGE
     )
     FetchContent_MakeAvailable(zlib)
