@@ -396,7 +396,7 @@ void AP_StoryComplete() {
     APSend(writer.write(req_t));
 }
 
-void AP_DeathLinkSend(const std::string &cause) {
+void AP_DeathLinkSend(const std::string &cause = "") {
     if (!enable_deathlink || !multiworld) return;
     if (cur_deathlink_amnesty > 0) {
         cur_deathlink_amnesty--;
@@ -423,10 +423,6 @@ void AP_DeathLinkSend(const std::string &cause) {
     std::vector<std::string> tags = {std::string("DeathLink")};
     b.tags = &tags;
     AP_SendBounce(b);
-}
-
-void AP_DeathLinkSend() {
-    AP_DeathLinkSend("");
 }
 
 void AP_EnableQueueItemRecvMsgs(bool b) {
