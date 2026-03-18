@@ -1113,7 +1113,7 @@ void cacheDataPkgs(Json::Value& serverPkgs) {
 Json::Value getDataPkgRequest(void) {
     Json::Value server_req;
 
-    size_t num_outdated = datapkg_outdated_games.size();
+    int num_outdated = (int)datapkg_outdated_games.size();
     if (!num_outdated) {
         server_req["cmd"] = "Sync";
 
@@ -1124,13 +1124,13 @@ Json::Value getDataPkgRequest(void) {
     else {
         // Fetch multiple games from the server at once to take advantage of compression.
         // Fetch up to 3 games at a time. Except if exactly 4 are left; then do 2 and 2 instead.
-        size_t num_to_fetch = (num_outdated == 4 ? 2 : (num_outdated > 3 ? 3 : num_outdated));
+        int num_to_fetch = (num_outdated == 4 ? 2 : (std::min)(3, num_outdated));
 
         server_req["cmd"] = "GetDataPackage";
         server_req["games"] = Json::arrayValue;
         for (const std::string& game : datapkg_outdated_games) {
             server_req["games"].append(game);
-            if (!(--num_to_fetch))
+            if (!(--num_to_fetch > 0))
                 break;
         }
     }
