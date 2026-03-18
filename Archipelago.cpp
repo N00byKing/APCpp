@@ -411,10 +411,11 @@ void AP_DeathLinkSend(const std::string &cause) {
     if (!cause.empty())
     {
         std::string cause_pname = cause;
-        size_t pname_marker = cause_pname.find("%YOU%");
+        constexpr std::string_view pname_you{"%YOU%"};
+        size_t pname_marker = cause_pname.find(pname_you);
 
         if (pname_marker != std::string::npos)
-            cause_pname.replace(pname_marker, 5, ap_player_name);
+            cause_pname.replace(pname_marker, pname_you.size(), ap_player_name);
         v["cause"] = cause_pname;
     }
     b.data = writer.write(v);
