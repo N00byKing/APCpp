@@ -21,6 +21,7 @@
 #include <functional>
 #include <utility>
 #include <vector>
+#include <algorithm>
 #include <filesystem>
 
 extern const int AP_OFFLINE_SLOT = 1404;
@@ -1081,7 +1082,7 @@ void parseDataPkg(const std::string& game, Json::Value& package)
 }
 
 bool loadDataPkg(const std::string& game, const std::string& hash) {
-    std::string cache_path = getDataPkgCachePath(game, hash);
+    std::filesystem::path cache_path = getDataPkgCachePath(game, hash);
     std::ifstream cache_file(cache_path);
     if (!cache_file.is_open())
         return false;
@@ -1099,10 +1100,10 @@ bool loadDataPkg(const std::string& game, const std::string& hash) {
 void cacheDataPkgs(Json::Value& serverPkgs) {
     for (std::string& game : serverPkgs["games"].getMemberNames()) {
         std::string hash = serverPkgs["games"][game]["checksum"].asString();
-        std::string cache_path = getDataPkgCachePath(game, hash);
+        std::filesystem::path cache_path = getDataPkgCachePath(game, hash);
 
         parseDataPkg(game, serverPkgs["games"][game]);
-        WriteFileJSON(serverPkgs["games"][game], cache_path);
+        WriteFileJSON(serverPkgs["games"][game], cache_path.string());
 
         datapkg_outdated_games.erase(game);
         printf("AP: Game Cache updated for %s\n", game.c_str());
@@ -1112,7 +1113,7 @@ void cacheDataPkgs(Json::Value& serverPkgs) {
 Json::Value getDataPkgRequest(void) {
     Json::Value server_req;
 
-    const int num_outdated = datapkg_outdated_games.size();
+    size_t num_outdated = datapkg_outdated_games.size();
     if (!num_outdated) {
         server_req["cmd"] = "Sync";
 
@@ -1123,7 +1124,7 @@ Json::Value getDataPkgRequest(void) {
     else {
         // Fetch multiple games from the server at once to take advantage of compression.
         // Fetch up to 3 games at a time. Except if exactly 4 are left; then do 2 and 2 instead.
-        int num_to_fetch = (num_outdated == 4 ? 2 : (num_outdated > 3 ? 3 : num_outdated));
+        size_t num_to_fetch = (num_outdated == 4 ? 2 : (num_outdated > 3 ? 3 : num_outdated));
 
         server_req["cmd"] = "GetDataPackage";
         server_req["games"] = Json::arrayValue;
