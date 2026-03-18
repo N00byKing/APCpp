@@ -88,7 +88,7 @@ void AP_StoryComplete();
 
 bool AP_DeathLinkPending();
 void AP_DeathLinkClear();
-void AP_DeathLinkSend();
+void AP_DeathLinkSend(const std::string &cause = "");
 
 /* Message Management Types */
 
