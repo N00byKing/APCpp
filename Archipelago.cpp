@@ -794,20 +794,21 @@ bool parse_response(std::string msg, std::string &request) {
             else if (root[i]["slot_data"]["DeathLink_Amnesty"] != Json::nullValue)
                 deathlink_amnesty = root[i]["slot_data"].get("DeathLink_Amnesty", 0).asInt();
             cur_deathlink_amnesty = deathlink_amnesty;
-            for (Json::Value key_j : root[i]["slot_data"]) {
-                std::string key = key_j.asString();
+            for (auto slot_itr = root[i]["slot_data"].begin(); slot_itr != root[i]["slot_data"].end(); ++slot_itr) {
+                std::string key = slot_itr.key().asString();
                 if (map_slotdata_callback_int.count(key)) {
-                    map_slotdata_callback_int[key](root[i]["slot_data"][key].asInt());
+                    map_slotdata_callback_int[key](slot_itr->asInt());
                 } else if (map_slotdata_callback_raw.count(key)) {
-                    map_slotdata_callback_raw[key](writer.write(root[i]["slot_data"][key]));
+                    map_slotdata_callback_raw[key](writer.write(*slot_itr));
                 } else if (map_slotdata_callback_mapintint.count(key)) {
                     std::map<int,int> out;
-                    for (auto itr : root[i]["slot_data"][key].getMemberNames()) {
-                        out[std::stoi(itr)] = root[i]["slot_data"][key][itr.c_str()].asInt();
+                    for (auto map_idx_itr : slot_itr->getMemberNames()) {
+                        out[std::stoi(map_idx_itr)] = (*slot_itr)[map_idx_itr].asInt();
                     }
                     map_slotdata_callback_mapintint[key](out);
                 } else {
-                    printf("AP: Warning: Unmapped slot data with key \"%s\"!\n", key.c_str());
+                    if (key != "death_link" && key != "death_link_amnesty" && key != "DeathLink" && key != "DeathLink_Amnesty")
+                        printf("AP: Warning: Unmapped slot data with key \"%s\"!\n", key.c_str());
                 }
             }
 
