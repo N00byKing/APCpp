@@ -1063,10 +1063,9 @@ std::filesystem::path getDataPkgCachePath(const std::string& game, const std::st
 {
     std::string alphanum_game, alphanum_hash;
 
-    std::copy_if(game.begin(), game.end(), std::back_inserter(alphanum_game), 
-        [](char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'); });
-    std::copy_if(hash.begin(), hash.end(), std::back_inserter(alphanum_hash), 
-        [](char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'); });
+    auto alphanum_func = [](char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'); };
+    std::copy_if(game.begin(), game.end(), std::back_inserter(alphanum_game), alphanum_func);
+    std::copy_if(hash.begin(), hash.end(), std::back_inserter(alphanum_hash), alphanum_func);
 
     return datapkg_cache_dir / (alphanum_game + "-" + alphanum_hash + ".json");
 }
@@ -1084,8 +1083,7 @@ void parseDataPkg(const std::string& game, Json::Value& package)
 bool loadDataPkg(const std::string& game, const std::string& hash) {
     std::filesystem::path cache_path = getDataPkgCachePath(game, hash);
     std::ifstream cache_file(cache_path);
-    if (!cache_file.is_open())
-        return false;
+    if (!cache_file.is_open()) return false;
     try {
         Json::Value datapkg;
         reader.parse(cache_file, datapkg);
@@ -1113,8 +1111,7 @@ void cacheDataPkgs(Json::Value& serverPkgs) {
 Json::Value getDataPkgRequest(void) {
     Json::Value server_req;
 
-    int num_outdated = (int)datapkg_outdated_games.size();
-    if (!num_outdated) {
+    if (datapkg_outdated_games.empty()) {
         server_req["cmd"] = "Sync";
 
         auth = true;
@@ -1124,7 +1121,7 @@ Json::Value getDataPkgRequest(void) {
     else {
         // Fetch multiple games from the server at once to take advantage of compression.
         // Fetch up to 3 games at a time. Except if exactly 4 are left; then do 2 and 2 instead.
-        int num_to_fetch = (num_outdated == 4 ? 2 : (std::min)(3, num_outdated));
+        int num_to_fetch = (datapkg_outdated_games.size() == 4 ? 2 : (std::min)(3, (int)datapkg_outdated_games.size()));
 
         server_req["cmd"] = "GetDataPackage";
         server_req["games"] = Json::arrayValue;
