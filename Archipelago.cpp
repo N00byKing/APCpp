@@ -815,7 +815,6 @@ bool parse_response(std::string msg, std::string &request) {
 
             for (auto &game_pkg : lib_room_info.datapackage_checksums) {
                 if (!loadDataPkg(game_pkg.first, game_pkg.second)) {
-                    // printf("AP: Cache outdated for game: %s\n", game_pkg.first.c_str());
                     datapkg_outdated_games.insert(game_pkg.first);
                 }
             }
