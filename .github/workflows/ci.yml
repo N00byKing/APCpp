@@ -5,19 +5,22 @@ on: [push, pull_request]
 
 jobs:
   build-win:
-    name: Build (windows-latest)
-    runs-on: windows-latest
+    strategy:
+      matrix:
+          os: [windows-latest, windows-2019]
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
-    - name: CMake configure (default version)
+    - name: CMake configure
       run: |
         mkdir build
         cd build
         cmake -G "Visual Studio 17 2022" -A Win32 `
               -DCMAKE_BUILD_TYPE=Release ..
-    - name: Build (default version)
+    - name: Build
       run: |
         cd build
         cmake --build . --config Release
@@ -29,7 +32,8 @@ jobs:
     - name: Create Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: APCpp-win
+        # This uses the specific name defined in the matrix above
+        name: APCpp-${{ matrix.os }}
         path: |
           artifact/*
 
