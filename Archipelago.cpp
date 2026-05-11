@@ -905,7 +905,8 @@ bool parse_response(std::string msg, std::string &request) {
         } else if (cmd == "PrintJSON") {
             const std::string printType = root[i].get("type","").asString();
             if (printType == "ItemSend" || printType == "ItemCheat") {
-                if (getPlayer(0, root[i]["receiving"].asInt()).alias == getPlayer(0, ap_player_id).alias || getPlayer(0,root[i]["item"]["player"].asInt()).alias != getPlayer(0,ap_player_id).alias) continue;
+                // Filter out itemrecv messages, which would otherwise be duplicated from the itemrecv callback
+                if (getPlayer(0, root[i]["receiving"].asInt()).alias == getPlayer(0, ap_player_id).alias) continue;
                 AP_NetworkPlayer recv_player = getPlayer(0, root[i]["receiving"].asInt());
                 AP_ItemSendMessage* msg = new AP_ItemSendMessage;
                 msg->type = AP_MessageType::ItemSend;
