@@ -8,6 +8,10 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_library(APCpp SHARED Archipelago.cpp Archipelago_DataStorageSim.cpp Archipelago_Gifting.cpp)
+
+# Allows users to use APCpp as a dependency
+target_include_directories(APCpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 set_target_properties(APCpp PROPERTIES PUBLIC_HEADER Archipelago.h)
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
