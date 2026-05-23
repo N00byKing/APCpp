@@ -929,7 +929,11 @@ bool parse_response(std::string msg, std::string &request) {
             } else if (printType == "Countdown") {
                 AP_CountdownMessage* msg = new AP_CountdownMessage;
                 msg->type = AP_MessageType::Countdown;
-                msg->timer = root[i]["countdown"].asInt();
+                if (root[i]["countdown"].isInt()) {
+                    msg->timer = root[i]["countdown"].asInt();
+                } else {
+                    msg->timer = 0;
+                }
                 msg->text = root[i]["data"][0]["text"].asString();
                 messageQueue.push_back(msg);
             } else {
