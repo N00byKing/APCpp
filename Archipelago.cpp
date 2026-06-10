@@ -78,7 +78,7 @@ std::function<void(AP_Bounce)> bouncedfunc = nullptr;
 // Serverdata Management
 std::map<std::string,AP_DataType> map_serverdata_typemanage;
 AP_GetServerDataRequest resync_serverdata_request;
-uint64_t last_item_idx = 0;
+uint32_t last_item_idx = 0;
 
 void resolveDataStorageOp(Json::Value op);
 
