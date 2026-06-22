@@ -97,6 +97,8 @@ enum struct AP_MessageType {
 };
 
 struct AP_Message {
+    virtual ~AP_Message() = default;
+
     AP_MessageType type = AP_MessageType::Plaintext;
     std::string text;
 };
