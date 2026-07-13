@@ -93,7 +93,7 @@ void AP_DeathLinkSend(const std::string &cause = "");
 /* Message Management Types */
 
 enum struct AP_MessageType {
-    Plaintext, ItemSend, ItemRecv, Hint, Countdown
+    Plaintext, ItemSend, ItemRecv, Hint, Countdown, Chat, ServerChat
 };
 
 struct AP_Message {
@@ -123,6 +123,11 @@ struct AP_HintMessage : AP_Message {
 
 struct AP_CountdownMessage : AP_Message {
     int timer;
+};
+
+struct AP_ChatMessage : AP_Message {
+    std::string player;
+    std::string message;
 };
 
 /* Message Management Functions */
