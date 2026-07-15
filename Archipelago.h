@@ -130,6 +130,10 @@ struct AP_ChatMessage : AP_Message {
     std::string message;
 };
 
+struct AP_ServerChatMessage : AP_Message {
+    std::string message;
+};
+
 /* Message Management Functions */
 
 bool AP_IsMessagePending();

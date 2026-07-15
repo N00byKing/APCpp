@@ -945,9 +945,8 @@ bool parse_response(std::string msg, std::string &request) {
                 msg->text = msg->player + ": " + msg->message;
                 messageQueue.push_back(msg);
             } else if (printType == "ServerChat") {
-                AP_ChatMessage* msg = new AP_ChatMessage;
+                AP_ServerChatMessage* msg = new AP_ServerChatMessage;
                 msg->type = AP_MessageType::ServerChat;
-                msg->player = "";
                 msg->message = root[i]["message"].asString();
                 msg->text = "[Server]: " + msg->message;
                 messageQueue.push_back(msg);
