@@ -937,7 +937,7 @@ bool parse_response(std::string msg, std::string &request) {
                 msg->text = root[i]["data"][0]["text"].asString();
                 messageQueue.push_back(msg);
             } else if (printType == "Chat") {
-                AP_NetworkPlayer sender = getPlayer(0, ap_player_id);
+                AP_NetworkPlayer sender = getPlayer(0, root[i]["slot"].asInt());
                 AP_ChatMessage* msg = new AP_ChatMessage;
                 msg->type = AP_MessageType::Chat;
                 msg->player = sender.alias;
