@@ -936,6 +936,20 @@ bool parse_response(std::string msg, std::string &request) {
                 }
                 msg->text = root[i]["data"][0]["text"].asString();
                 messageQueue.push_back(msg);
+            } else if (printType == "Chat") {
+                AP_NetworkPlayer sender = getPlayer(0, root[i]["slot"].asInt());
+                AP_ChatMessage* msg = new AP_ChatMessage;
+                msg->type = AP_MessageType::Chat;
+                msg->player = sender.alias;
+                msg->message = root[i]["message"].asString();
+                msg->text = msg->player + ": " + msg->message;
+                messageQueue.push_back(msg);
+            } else if (printType == "ServerChat") {
+                AP_ServerChatMessage* msg = new AP_ServerChatMessage;
+                msg->type = AP_MessageType::ServerChat;
+                msg->message = root[i]["message"].asString();
+                msg->text = "[Server]: " + msg->message;
+                messageQueue.push_back(msg);
             } else {
                 AP_Message* msg = new AP_Message;
                 msg->text = "";
