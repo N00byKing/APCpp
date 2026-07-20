@@ -19,6 +19,8 @@ extern std::set<int> teams_set;
 extern bool gifting_supported;
 extern bool gifting_autoReject;
 
+extern std::function<void(std::string)> logfunc;
+
 // Stuff that is only used for Gifting
 std::map<std::pair<int,std::string>,AP_GiftBoxProperties> map_players_to_giftbox;
 std::mutex map_players_to_giftbox_mutex;
@@ -39,7 +41,7 @@ bool hasOpenGiftBox(int team, std::string player);
 
 AP_RequestStatus AP_SetGiftBoxProperties(AP_GiftBoxProperties props) {
     if (!gifting_supported){
-        printf("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
+        logfunc("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
         return AP_RequestStatus::Error;
     }
 
@@ -96,7 +98,7 @@ std::vector<AP_Gift> AP_CheckGifts() {
 
 AP_RequestStatus AP_SendGift(AP_Gift gift) {
     if (!gifting_supported){
-        printf("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
+        logfunc("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
         return AP_RequestStatus::Error;
     }
 
@@ -118,7 +120,7 @@ AP_RequestStatus AP_AcceptGift(std::string id) {
 }
 AP_RequestStatus AP_AcceptGift(std::set<std::string> ids) {
     if (!gifting_supported){
-        printf("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
+        logfunc("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
         return AP_RequestStatus::Error;
     }
 
@@ -147,7 +149,7 @@ AP_RequestStatus AP_RejectGift(std::string id) {
 }
 AP_RequestStatus AP_RejectGift(std::set<std::string> ids) {
     if (!gifting_supported){
-        printf("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
+        logfunc("AP: Gifting isn't enabled yet, please call AP_SetGiftingSupported(true) first");
         return AP_RequestStatus::Error;
     }
 

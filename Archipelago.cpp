@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <iostream>
 #include <queue>
 #include <random>
 #include <fstream>
@@ -30,6 +31,7 @@ constexpr char const* AP_OFFLINE_NAME = "You";
 constexpr AP_NetworkVersion AP_DEFAULT_NETWORK_VERSION = {0,5,1}; // Default for compatibility reasons
 
 //Setup Stuff
+std::function<void(std::string)> logfunc = [](std::string log){ std::cout << log; };
 bool init = false;
 bool auth = false;
 bool refused = false;
@@ -134,16 +136,16 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
 
     if (!strcmp(ip,"")) {
         ip = "archipelago.gg:38281";
-        printf("AP: Using default Server Adress: '%s'\n", ip);
+        logfunc("AP: Using default Server Adress: '" + std::string(ip) + "'\n");
     } else {
-        printf("AP: Using Server Adress: '%s'\n", ip);
+        logfunc("AP: Using Server Adress: " + std::string(ip) + "\n");
     }
     ap_ip = ip;
     ap_game = game;
     ap_player_name = player_name;
     ap_passwd = passwd;
 
-    printf("AP: Initializing...\n");
+    logfunc("AP: Initializing...\n");
 
     //Connect to server
     ix::initNetSystem();
@@ -159,7 +161,7 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
             }
             else if (msg->type == ix::WebSocketMessageType::Open)
             {
-                printf("AP: Connected to Archipelago\n");
+                logfunc("AP: Connected to Archipelago\n");
             }
             else if (msg->type == ix::WebSocketMessageType::Error || msg->type == ix::WebSocketMessageType::Close)
             {
@@ -168,9 +170,9 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
                     itr.second->status = AP_RequestStatus::Error;
                     map_server_data.erase(itr.first);
                 }
-                printf("AP: Error connecting to Archipelago. Retries: %d\n", msg->errorInfo.retries-1);
+                logfunc("AP: Error connecting to Archipelago. Retries: " + std::to_string(msg->errorInfo.retries-1) + "\n");
                 if (msg->errorInfo.retries-1 >= 2 && isSSL && !ssl_success) {
-                    printf("AP: SSL connection failed. Attempting unencrypted...\n");
+                    logfunc("AP: SSL connection failed. Attempting unencrypted...\n");
                     webSocket.setUrl("ws://" + ap_ip);
                     isSSL = false;
                 }
@@ -313,7 +315,7 @@ void AP_SendItem(int64_t idx) {
 }
 void AP_SendItem(std::set<int64_t> const& locations) {
     for (int64_t idx : locations) {
-        printf("AP: Checked '%s'.\n", getLocationName(ap_game, idx).c_str());
+        logfunc("AP: Checked '" + getLocationName(ap_game, idx) + "'.\n");
     }
     if (multiworld) {
         Json::Value req_t;
@@ -429,6 +431,10 @@ void AP_DeathLinkSend(const std::string &cause) {
 
 void AP_EnableQueueItemRecvMsgs(bool b) {
     queueitemrecvmsg = b;
+}
+
+void AP_SetLoggingCallback(std::function<void(std::string)> f_log) {
+    logfunc = f_log;
 }
 
 void AP_SetItemClearCallback(std::function<void()> f_itemclr) {
@@ -755,7 +761,7 @@ bool parse_response(std::string msg, std::string &request) {
             }
         } else if (cmd == "Connected") {
             // Avoid inconsistency if we disconnected before
-            printf("AP: Authenticated\n");
+            logfunc("AP: Authenticated\n");
             ap_player_id = root[i]["slot"].asInt(); // MUST be called before resetitemvalues, otherwise PrivateServerDataPrefix, GetPlayerID return broken values!
             ap_player_team = root[i]["team"].asInt();
             resetItemValues();
@@ -807,7 +813,7 @@ bool parse_response(std::string msg, std::string &request) {
                     map_slotdata_callback_mapintint[key](out);
                 } else {
                     if (key != "death_link" && key != "death_link_amnesty" && key != "DeathLink" && key != "DeathLink_Amnesty")
-                        printf("AP: Warning: Unmapped slot data with key \"%s\"!\n", key.c_str());
+                        logfunc("AP: Warning: Unmapped slot data with key '" + key + "'!\n");
                 }
             }
 
@@ -979,7 +985,7 @@ bool parse_response(std::string msg, std::string &request) {
             if (locinfofunc) {
                 locinfofunc(locations);
             } else {
-                printf("AP: Received LocationInfo but no handler registered!\n");
+                logfunc("AP: Received LocationInfo but no handler registered!\n");
             }
         } else if (cmd == "ReceivedItems") {
             int item_idx = root[i]["index"].asInt();
@@ -1024,7 +1030,7 @@ bool parse_response(std::string msg, std::string &request) {
         } else if (cmd == "ConnectionRefused") {
             auth = false;
             refused = true;
-            printf("AP: Archipelago Server has refused connection. Check Password / Name / IP and restart the Game.\n");
+            logfunc("AP: Archipelago Server has refused connection. Check Password / Name / IP and restart the Game.\n");
             fflush(stdout);
         } else if (cmd == "Bounced") {
             if (!enable_deathlink && !bouncedfunc) continue;
@@ -1073,7 +1079,7 @@ bool parse_response(std::string msg, std::string &request) {
 
 void APSend(std::string req) {
     if (webSocket.getReadyState() != ix::ReadyState::Open) {
-        printf("AP: Not Connected. Send will fail.\n");
+        logfunc("AP: Not Connected. Send will fail.\n");
         return;
     }
     webSocket.send(req);
@@ -1133,7 +1139,7 @@ void cacheDataPkgs(Json::Value& serverPkgs) {
         WriteFileJSON(serverPkgs["games"][game], cache_path.string());
 
         datapkg_outdated_games.erase(game);
-        printf("AP: Game Cache updated for %s\n", game.c_str());
+        logfunc("AP: Game Cache updated for " + game + "\n");
     }
 }
 

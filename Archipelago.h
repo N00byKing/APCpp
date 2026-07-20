@@ -60,6 +60,9 @@ void AP_SetLocationCheckedCallback(std::function<void(int64_t)> f_locrecv);
 
 /* Optional Callback Functions */
 
+// By default, logs are written to stdout. Set this callback to instead set a different function to receive the log string.
+void AP_SetLoggingCallback(std::function<void(std::string)> f_log);
+
 //Parameter Function will be called when Death Link is received. Alternative to Pending/Clear usage
 void AP_SetDeathLinkRecvCallback(std::function<void()> f_deathrecv);
 //Overload with the deathlink source and cause
