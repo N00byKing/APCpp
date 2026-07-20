@@ -59,7 +59,7 @@ void resolveDataStorageOp(Json::Value dataOp) {
             if (known_operations.count(operation_str))
                 known_operations[operation_str](key, newVal);
             else
-                logfunc("AP: Unimplement Datastore operation " + operation_str +  " in offline session!\n");
+                logfunc("AP: Unimplement Datastore operation " + operation_str +  " in offline session!");
         }
         WriteFileJSON(sp_save_root, sp_save_path);
         if (dataOp["want_reply"].asBool()) {
