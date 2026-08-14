@@ -11,6 +11,8 @@ extern std::string sp_save_path;
 
 extern Json::FastWriter writer;
 
+extern std::function<void(std::string)> logfunc;
+
 extern const int AP_OFFLINE_SLOT;
 
 void WriteFileJSON(Json::Value root, std::string path);
@@ -57,7 +59,7 @@ void resolveDataStorageOp(Json::Value dataOp) {
             if (known_operations.count(operation_str))
                 known_operations[operation_str](key, newVal);
             else
-                printf("AP: Unimplement Datastore operation \"%s\" in offline session!\n", operation_str.c_str());
+                logfunc("AP: Unimplement Datastore operation " + operation_str +  " in offline session!");
         }
         WriteFileJSON(sp_save_root, sp_save_path);
         if (dataOp["want_reply"].asBool()) {
