@@ -172,7 +172,7 @@ int AP_GetRoomInfo(AP_RoomInfo*);
 AP_ConnectionStatus AP_GetConnectionStatus();
 std::uint64_t AP_GetUUID();
 int AP_GetPlayerID();
-void AP_SetTags(std::vector<std::string> const& tags);
+void AP_UpdateTags(std::vector<std::string> const& tags);
 
 /* Serverside Data Types */
 

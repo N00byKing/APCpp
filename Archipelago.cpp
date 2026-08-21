@@ -389,7 +389,7 @@ void AP_SendLocationScouts(std::set<int64_t> const& locations, int create_as_hin
     }
 }
 
-void AP_SetTags(std::vector<std::string> const& tags)
+void AP_UpdateTags(std::vector<std::string> const& tags)
 {
     lib_room_info.tags = tags;
     if (!multiworld) return;
