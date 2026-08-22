@@ -391,6 +391,19 @@ void AP_SendLocationScouts(std::set<int64_t> const& locations, int create_as_hin
     }
 }
 
+void AP_UpdateTags(std::vector<std::string> const& tags)
+{
+    lib_room_info.tags = tags;
+    if (!multiworld) return;
+    Json::Value req_t;
+    req_t[0]["cmd"] = "ConnectUpdate";
+    req_t[0]["tags"] = Json::arrayValue;
+    for (std::string tag : tags) {
+        req_t[0]["tags"].append(tag);
+    }
+    APSend(writer.write(req_t));
+}
+
 void AP_StoryComplete() {
     if (!multiworld) return;
     Json::Value req_t;
