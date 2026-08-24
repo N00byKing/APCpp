@@ -1066,19 +1066,19 @@ bool parse_response(std::string msg, std::string &request) {
             } else {
                 AP_Bounce bounce;
                 std::vector<std::string> games;
-                std::vector<std::string> slots;
+                std::vector<int64_t> slots;
                 std::vector<std::string> tags;
                 // Add targets to bounce package
-                #define ADD_TARGETS( targets ) \
+                #define ADD_TARGETS( targets, accessor ) \
                         if (root[i].isMember(#targets)) { \
                             for (unsigned int j = 0; j < root[i][#targets].size(); j++) { \
-                                targets.push_back(root[i][#targets][j].asString()); \
+                                targets.push_back(root[i][#targets][j].accessor()); \
                             } \
                             bounce.targets = &targets; \
                         }
-                ADD_TARGETS(games)
-                ADD_TARGETS(slots)
-                ADD_TARGETS(tags)
+                ADD_TARGETS(games, asString)
+                ADD_TARGETS(slots, asUInt64)
+                ADD_TARGETS(tags, asString)
                 #undef ADD_TARGETS
 
                 bounce.data = writer.write(root[i]["data"]);
