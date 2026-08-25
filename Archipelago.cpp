@@ -1077,7 +1077,7 @@ bool parse_response(std::string msg, std::string &request) {
                             bounce.targets = &targets; \
                         }
                 ADD_TARGETS(games, asString)
-                ADD_TARGETS(slots, asUInt64)
+                ADD_TARGETS(slots, asInt64)
                 ADD_TARGETS(tags, asString)
                 #undef ADD_TARGETS
 
