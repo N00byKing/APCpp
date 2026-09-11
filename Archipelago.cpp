@@ -1014,6 +1014,7 @@ bool parse_response(std::string msg, std::string &request) {
                     msg->item = getItemName(ap_game, item_id);
                     msg->sendPlayer = sender.alias;
                     msg->text = std::string("Received ") + msg->item + std::string(" from ") + msg->sendPlayer;
+                    printf("AP: %s\n", msg->text.c_str());
                     messageQueue.push_back(msg);
                 }
             }
