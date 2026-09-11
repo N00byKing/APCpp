@@ -7,10 +7,36 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-add_library(APCpp SHARED Archipelago.cpp Archipelago_DataStorageSim.cpp Archipelago_Gifting.cpp)
+set(APCPP_SOURCES
+    Archipelago.cpp
+    Archipelago_DataStorageSim.cpp
+    Archipelago_Gifting.cpp)
 
-# Allows users to use APCpp as a dependency
-target_include_directories(APCpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# Dependencies
+add_library(APCpp_deps INTERFACE)
+
+# Public header def
+add_library(APCpp_headers INTERFACE)
+target_include_directories(APCpp_headers INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>)
+
+# Compile once, create static and dynamic lib
+add_library(APCpp_objects OBJECT ${APCPP_SOURCES})
+target_link_libraries(APCpp_objects
+    PUBLIC APCpp_headers
+    PRIVATE APCpp_deps)
+add_library(APCpp SHARED)
+target_link_libraries(APCpp
+    PUBLIC APCpp_headers
+    PRIVATE APCpp_objects APCpp_deps)
+add_library(APCpp_static STATIC)
+target_link_libraries(APCpp_static
+    PUBLIC APCpp_headers APCpp_deps
+    PRIVATE APCpp_objects)
+
+add_library(APCpp::APCpp ALIAS APCpp)
+add_library(APCpp::APCpp_static ALIAS APCpp_static)
 
 set_target_properties(APCpp PROPERTIES PUBLIC_HEADER Archipelago.h)
 
@@ -69,20 +95,19 @@ endif (MINGW OR NOT ZLIB_FOUND)
 
 set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(IXWebSocket)
-include_directories(IXWebSocket)
-target_link_libraries(APCpp ixwebsocket)
+target_link_libraries(APCpp_deps INTERFACE ixwebsocket)
 
+# MinGW shared lib uses static deps
 if (MINGW)
-    target_link_libraries(APCpp -static -static-libstdc++ -static-libgcc)
+    target_link_options(APCpp PRIVATE -static -static-libstdc++ -static-libgcc)
 endif(MINGW)
 
 # Attempt finding system version of JsonCpp
 find_package(PkgConfig)
 if (PKGCONFIG_FOUND AND (NOT MINGW) AND (NOT BUNDLED_JSONCPP))
-    pkg_check_modules(JSONCPP jsoncpp)
+    pkg_check_modules(JSONCPP IMPORTED_TARGET jsoncpp)
     if (JSONCPP_FOUND)
-        include_directories(${JSONCPP_INCLUDE_DIRS})
-        target_link_libraries(APCpp ${JSONCPP_LDFLAGS})
+        target_link_libraries(APCpp_deps INTERFACE PkgConfig::JSONCPP)
     endif(JSONCPP_FOUND)
 endif(PKGCONFIG_FOUND AND (NOT MINGW) AND (NOT BUNDLED_JSONCPP))
 
@@ -92,12 +117,11 @@ if((NOT JSONCPP_FOUND) OR BUNDLED_JSONCPP)
     set(JSONCPP_WITH_POST_BUILD_UNITTEST OFF CACHE BOOL "" FORCE)
     add_subdirectory(jsoncpp)
     set_property(TARGET jsoncpp_static PROPERTY POSITION_INDEPENDENT_CODE ON)
-    include_directories(jsoncpp/include)
-    target_link_libraries(APCpp jsoncpp_static)
+    target_link_libraries(APCpp_deps INTERFACE jsoncpp_static)
 endif((NOT JSONCPP_FOUND) OR BUNDLED_JSONCPP)
 
 if (WIN32)
-    target_link_libraries(APCpp ws2_32)
+    target_link_libraries(APCpp_deps INTERFACE ws2_32 crypt32 bcrypt)
 endif(WIN32)
 
-install(TARGETS APCpp PUBLIC_HEADER)
+install(TARGETS APCpp APCpp_static PUBLIC_HEADER)
