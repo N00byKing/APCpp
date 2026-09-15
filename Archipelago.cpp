@@ -931,6 +931,7 @@ bool parse_response(std::string msg, std::string &request) {
                 msg->type = AP_MessageType::ItemSend;
                 msg->item = getItemName(recv_player.game, root[i]["item"]["item"].asInt64());
                 msg->recvPlayer = recv_player.alias;
+                msg->sendPlayer = getPlayer(0,root[i]["item"]["player"].asInt()).alias;
                 msg->text = msg->item + std::string(" was sent to ") + msg->recvPlayer;
                 messageQueue.push_back(msg);
             } else if (printType == "Hint") {

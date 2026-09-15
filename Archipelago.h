@@ -109,6 +109,7 @@ struct AP_Message {
 struct AP_ItemSendMessage : AP_Message {
     std::string item;
     std::string recvPlayer;
+    std::string sendPlayer;
 };
 
 struct AP_ItemRecvMessage : AP_Message {
