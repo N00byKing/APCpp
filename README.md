@@ -58,7 +58,10 @@ If Gifting is supported, you can interact with it using the following methods:
 - When you want to send a gift, call `std::map<std::pair<int,std::string>,AP_GiftBoxProperties> AP_QueryGiftBoxes();` to find out what type of gifts other players desire, and then call `AP_RequestStatus AP_SendGift(AP_Gift gift);` to send a gift to who you have chosen.
 
 # Building
+
 Clone the Repo recursively!
+Building the project will result in both a shared library (recommended) and a static one.
+
 ## Linux
 - Create a folder `build`
 - `cd build`
@@ -69,3 +72,5 @@ Clone the Repo recursively!
 - Enter the folder
 - `cmake .. -DWIN32=1` (If on MinGW, also add `-DMINGW=1`)
 - `cmake --build .`
+
+When using the static library, linking against the Windows system libraries `ws2_32`, `crypt32`, and `bcrypt` is necessary.
