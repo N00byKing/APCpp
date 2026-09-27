@@ -135,16 +135,18 @@ void AP_Init(const char* ip, const char* game, const char* player_name, const ch
     rando = std::mt19937_64(milliseconds_since_epoch);
 
     if (!strcmp(ip,"")) {
-        ip = "archipelago.gg:38281";
-        logfunc("AP: Using default Server Adress: '" + std::string(ip) + "'");
+        ap_ip = "archipelago.gg:38281";
     } else {
-        logfunc("AP: Using Server Adress: '" + std::string(ip) + "'");
+        ap_ip = ip;
+        if (ap_ip.find_last_of(':') == std::string::npos) {
+            ap_ip += ":38281";
+        }
     }
-    ap_ip = ip;
     ap_game = game;
     ap_player_name = player_name;
     ap_passwd = passwd;
 
+    logfunc("AP: Using server address: '" + ap_ip + "'");
     logfunc("AP: Initializing...");
 
     //Connect to server
