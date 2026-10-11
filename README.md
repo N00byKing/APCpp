@@ -59,6 +59,9 @@ If Gifting is supported, you can interact with it using the following methods:
 
 # Building
 Clone the Repo recursively!
+```
+git clone --recurse-submodules https://github.com/N00byKing/APCpp
+```
 ## Linux
 - Create a folder `build`
 - `cd build`
