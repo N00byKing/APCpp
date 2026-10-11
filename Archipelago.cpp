@@ -420,8 +420,6 @@ void AP_StoryComplete() {
     APSend(writer.write(req_t));
 }
 
-
-
 void AP_DeathLinkSend(const std::string &cause) {
     if (!enable_deathlink || !multiworld) return;
     if (cur_deathlink_amnesty > 0) {
