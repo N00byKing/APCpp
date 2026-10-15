@@ -45,6 +45,7 @@ size_t ap_player_name_hash;
 std::string ap_ip;
 std::string ap_game;
 std::string ap_passwd;
+std::vector<std::string> ap_connect_tags;
 std::uint64_t ap_uuid = 0;
 std::mt19937_64 rando;
 AP_NetworkVersion client_version = AP_DEFAULT_NETWORK_VERSION; 
