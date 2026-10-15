@@ -45,7 +45,6 @@ size_t ap_player_name_hash;
 std::string ap_ip;
 std::string ap_game;
 std::string ap_passwd;
-std::vector<std::string> ap_connect_tags;
 std::uint64_t ap_uuid = 0;
 std::mt19937_64 rando;
 AP_NetworkVersion client_version = AP_DEFAULT_NETWORK_VERSION; 
@@ -394,14 +393,13 @@ void AP_SendLocationScouts(std::set<int64_t> const& locations, int create_as_hin
     }
 }
 
-void AP_SetConnectTags(std::vector<std::string> const& tags)
-{
-    ap_connect_tags = tags;
-}
-
 void AP_UpdateTags(std::vector<std::string> const& tags)
 {
     lib_room_info.tags = tags;
+    if (!auth) {
+        ap_connect_tags = tags; // for initial Connect
+        return;
+    }
     if (!multiworld) return;
     Json::Value req_t;
     req_t[0]["cmd"] = "ConnectUpdate";
