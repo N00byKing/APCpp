@@ -397,10 +397,8 @@ void AP_SendLocationScouts(std::set<int64_t> const& locations, int create_as_hin
 void AP_UpdateTags(std::vector<std::string> const& tags)
 {
     lib_room_info.tags = tags;
-    if (!auth) {
-        ap_connect_tags = tags; // for initial Connect
-        return;
-    }
+    ap_connect_tags = tags; // for initial Connect
+    if (!auth) return;
     if (!multiworld) return;
     Json::Value req_t;
     req_t[0]["cmd"] = "ConnectUpdate";
