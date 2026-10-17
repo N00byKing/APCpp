@@ -272,6 +272,7 @@ void AP_Shutdown() {
     ap_ip.clear();
     ap_game.clear();
     ap_passwd.clear();
+    ap_connect_tags.clear();
     ap_uuid = 0;
     client_version = AP_DEFAULT_NETWORK_VERSION;
     deathlinkstat = false;
