@@ -74,6 +74,7 @@ target_link_libraries(APCpp ixwebsocket)
 
 if (MINGW)
     target_link_libraries(APCpp -static -static-libstdc++ -static-libgcc)
+    target_link_options(APCpp PRIVATE "-Wl,-u,__mingw_fe_dfl_env") # HACK: Workaround bug in MSYS leaving undefined symbol
 endif(MINGW)
 
 # Attempt finding system version of JsonCpp
