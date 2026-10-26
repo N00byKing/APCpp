@@ -45,6 +45,7 @@ size_t ap_player_name_hash;
 std::string ap_ip;
 std::string ap_game;
 std::string ap_passwd;
+std::vector<std::string> ap_connect_tags;
 std::uint64_t ap_uuid = 0;
 std::mt19937_64 rando;
 AP_NetworkVersion client_version = AP_DEFAULT_NETWORK_VERSION; 
@@ -271,6 +272,7 @@ void AP_Shutdown() {
     ap_ip.clear();
     ap_game.clear();
     ap_passwd.clear();
+    ap_connect_tags.clear();
     ap_uuid = 0;
     client_version = AP_DEFAULT_NETWORK_VERSION;
     deathlinkstat = false;
@@ -396,6 +398,8 @@ void AP_SendLocationScouts(std::set<int64_t> const& locations, int create_as_hin
 void AP_UpdateTags(std::vector<std::string> const& tags)
 {
     lib_room_info.tags = tags;
+    ap_connect_tags = tags; // for initial Connect
+    if (!auth) return;
     if (!multiworld) return;
     Json::Value req_t;
     req_t[0]["cmd"] = "ConnectUpdate";
@@ -766,6 +770,9 @@ bool parse_response(std::string msg, std::string &request) {
                 req_t[0]["password"] = ap_passwd;
                 req_t[0]["uuid"] = ap_uuid;
                 req_t[0]["tags"] = Json::arrayValue;
+                for (std::string tag : ap_connect_tags) {
+                    req_t[0]["tags"].append(tag);
+                }
                 req_t[0]["version"]["major"] = client_version.major;
                 req_t[0]["version"]["minor"] = client_version.minor;
                 req_t[0]["version"]["build"] = client_version.build;
